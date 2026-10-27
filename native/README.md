@@ -19,6 +19,9 @@ Ctrl+Shift+O) and the panel stays current. It picks up changes within about a se
 
 - Visual Studio 2022 or 2026 with **Desktop development with C++** (includes the "C++ CMake tools for Windows" the
   scripts use; no separate CMake needed).
+- The **VS 2022 C++ compiler** for the mod: UE4SS 3.0.x doesn't compile with VS 2026's newer compiler. With VS 2026,
+  add it in the Visual Studio Installer: Modify > Individual components > "MSVC v143 - VS 2022 C++ x64/x86 build
+  tools (Latest)". `build-mod.ps1` picks it automatically; the panel builds with either.
 - [Rust](https://rustup.rs/): UE4SS builds part of itself with it.
 - UE4SS installed in the game (you already have it, from generating the mappings file).
 - GitHub access to UE4SS's engine headers: RE-UE4SS pulls a private `UEPseudo` submodule. Link your GitHub account

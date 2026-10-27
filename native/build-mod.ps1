@@ -40,7 +40,7 @@ if (-not (Get-Command cargo -ErrorAction SilentlyContinue)) {
 }
 
 . (Join-Path $PSScriptRoot 'VsBuildEnv.ps1')
-$tools = Enter-VsBuildEnv
+$tools = Enter-VsBuildEnv -Vs2022Compiler
 
 if (Test-Path (Join-Path $ue4ss 'xmake.lua')) {
     # Newer RE-UE4SS (experimental releases) builds with xmake.
