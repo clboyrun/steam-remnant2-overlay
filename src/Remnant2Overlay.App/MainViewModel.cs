@@ -3,7 +3,9 @@ using System.ComponentModel;
 using System.IO;
 using System.Runtime.CompilerServices;
 using System.Windows.Data;
+using CUE4Parse.UE4.Versions;
 using lib.remnant2.analyzer.Enums;
+using Remnant2Overlay.Icons;
 using Remnant2Overlay.SaveReader;
 
 namespace Remnant2Overlay.App;
@@ -28,6 +30,8 @@ public sealed class MainViewModel : INotifyPropertyChanged
 
     private readonly Settings _settings;
     private readonly ItemDatabase _db = ItemDatabase.LoadEmbedded();
+    private readonly IconCache _iconCache = new(Settings.IconDir);
+    private CancellationTokenSource? _iconSync;
     private IReadOnlyList<CharacterRuns> _characters = [];
     private IReadOnlyList<CharacterInventory> _fallbackInventories = [];
 
@@ -40,6 +44,7 @@ public sealed class MainViewModel : INotifyPropertyChanged
     private RunChoice? _run;
     private bool _userPickedRun;
     private string _status = "";
+    private string _iconStatus = "";
     private string _runSummary = "";
     private string _questStatus = "";
     private bool _nothingLeft;
@@ -50,13 +55,14 @@ public sealed class MainViewModel : INotifyPropertyChanged
         _settings = settings;
         Tiles = new ObservableCollection<ItemTileViewModel>(_db.Items
             .OrderBy(i => i.Category).ThenBy(i => i.DisplayName)
-            .Select(i => new ItemTileViewModel(i, Settings.IconDir)));
-        View = CollectionViewSource.GetDefaultView(Tiles);
-        View.Filter = o => Matches((ItemTileViewModel)o);
-
+            .Select(i => new ItemTileViewModel(i, _iconCache.PathFor(i.AssetName))));
+        // Set the filter state before attaching the filter: the view evaluates it immediately.
         _category = Categories[0];
         _world = Worlds.FirstOrDefault(w => w.World == settings.AdventureWorld) ?? Worlds[0];
         _characterIndex = settings.CharacterIndex;
+
+        View = CollectionViewSource.GetDefaultView(Tiles);
+        View.Filter = o => Matches((ItemTileViewModel)o);
     }
 
     public ObservableCollection<ItemTileViewModel> Tiles { get; }
@@ -116,6 +122,7 @@ public sealed class MainViewModel : INotifyPropertyChanged
     public bool ManualMode { get => _manualMode; set => Set(ref _manualMode, value); }
     public bool ShowRunView { get => _showRunView; set => Set(ref _showRunView, value); }
     public string Status { get => _status; private set => Set(ref _status, value); }
+    public string IconStatus { get => _iconStatus; private set => Set(ref _iconStatus, value); }
     public string RunSummary { get => _runSummary; private set => Set(ref _runSummary, value); }
     public string QuestStatus { get => _questStatus; private set => Set(ref _questStatus, value); }
     public bool NothingLeft { get => _nothingLeft; private set => Set(ref _nothingLeft, value); }
@@ -194,6 +201,69 @@ public sealed class MainViewModel : INotifyPropertyChanged
         if (_characterIndex >= Math.Max(_characters.Count, _fallbackInventories.Count)) _characterIndex = 0;
         Changed(nameof(CharacterIndex));
         ApplyCharacter();
+    }
+
+    /// <summary>
+    /// Extracts any icons missing from the local cache, in the background, and fills tiles in as they land.
+    /// Items known to have no icon are skipped until the game files change, so this is cheap after the first run.
+    /// </summary>
+    public async Task SyncIconsAsync(bool force = false)
+    {
+        _iconSync?.Cancel();
+        var cts = _iconSync = new CancellationTokenSource();
+
+        string? paks = _settings.GamePaksPath is { } custom ? GameLocator.NormalizePaksFolder(custom) : GameLocator.FindPaksFolder();
+        if (paks is null)
+        {
+            IconStatus = "Icons: Remnant 2 not found. Use Game folder… to point at it.";
+            return;
+        }
+
+        var game = Enum.TryParse<EGame>(_settings.UnrealVersion, out var parsed) ? parsed : EGame.GAME_UE5_2;
+        var options = new IconExtractorOptions(paks, game, _settings.UsmapPath);
+        var tilesByAsset = Tiles.ToDictionary(t => t.Item.AssetName);
+
+        // Created on the UI thread, so reports arrive on the UI thread.
+        var progress = new Progress<IconSyncProgress>(p =>
+        {
+            if (cts.IsCancellationRequested) return;
+            if (p.IconPath is not null && tilesByAsset.TryGetValue(p.AssetName, out var tile)) tile.ReloadIcon(p.IconPath);
+            IconStatus = $"Extracting icons {p.Done}/{p.Total}…";
+        });
+
+        try
+        {
+            IconStatus = "Checking icons…";
+            var result = await Task.Run(() =>
+            {
+                if (force) _iconCache.Clear();
+                return IconSync.Run(_iconCache, _db.Items, options, progress, cancellationToken: cts.Token);
+            }, cts.Token);
+
+            if (force)
+                foreach (var t in Tiles) t.ReloadIcon(_iconCache.PathFor(t.Item.AssetName));
+
+            int have = Tiles.Count(t => t.HasIcon);
+            IconStatus = result.Extracted + result.NotFound == 0
+                ? $"Icons: {have}/{Tiles.Count} cached"
+                : $"Icons: {have}/{Tiles.Count} cached ({result.Extracted} new, {result.NotFound} not found in game files)";
+        }
+        catch (OperationCanceledException)
+        {
+            // A newer sync or app shutdown took over.
+        }
+        catch (Exception e)
+        {
+            IconStatus = $"Icon extraction failed: {e.Message}";
+        }
+    }
+
+    public void CancelIconSync() => _iconSync?.Cancel();
+
+    public void SetGameFolder(string folder)
+    {
+        _settings.GamePaksPath = folder;
+        _ = SyncIconsAsync();
     }
 
     public void Toggle(ItemTileViewModel tile)

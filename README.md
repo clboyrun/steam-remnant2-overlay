@@ -12,26 +12,25 @@ Run the game in **borderless windowed** mode so the overlay can sit on top of it
 | --- | --- |
 | `src/Remnant2Overlay.App` | WPF overlay window |
 | `src/Remnant2Overlay.SaveReader` | Save decompression, owned-item reader, bundled item list (`Data/items.json`) |
+| `src/Remnant2Overlay.Icons` | Finds the game install and extracts icons into the local cache (CUE4Parse) |
 | `src/Remnant2Overlay.Cli` | Prints owned/total per category and the owned items from a `profile.sav` |
-| `tools/Remnant2Overlay.IconExtractor` | Extracts item icons from your own game install |
+| `tools/Remnant2Overlay.IconExtractor` | Command-line icon extraction, for re-running or debugging it |
 | `tools/` scripts | Standalone save decompression (PowerShell/Python), item list builder, how-to guide |
 
 ## Getting started (Windows)
 
 1. Install the [.NET 10 SDK](https://dotnet.microsoft.com/download/dotnet/10.0).
-2. Extract icons from your install (optional, tiles show initials without them):
-   ```
-   dotnet run --project tools/Remnant2Overlay.IconExtractor -- --paks "C:\Program Files (x86)\Steam\steamapps\common\Remnant2\Remnant2\Content\Paks"
-   ```
-   Icons go to `%LOCALAPPDATA%\Remnant2Overlay\icons`. If many come out missing, run with `--list` to see
-   the icon textures it can find, and see "Icon extraction notes" below.
-3. Run the overlay:
+2. Run the overlay:
    ```
    dotnet run --project src/Remnant2Overlay.App
    ```
 
 ## Using the overlay
 
+- On first start it finds Remnant 2 through your Steam libraries and extracts item icons in the background
+  into `%LOCALAPPDATA%\Remnant2Overlay\icons`; tiles show initials until their icon arrives. Later starts only
+  extract icons that are still missing, and items with no icon aren't searched again until the game files
+  change. Use **Game folder…** if the game isn't found, and **Re-extract icons** to rebuild the cache.
 - It finds `profile.sav` under `%USERPROFILE%\Saved Games\Remnant2\Steam` automatically, or use **Open save…**.
 - It reloads by itself whenever the game writes the save.
 - Owned items have a green border; missing items are dimmed. Hover a tile for where it drops.
@@ -48,13 +47,22 @@ Run the game in **borderless windowed** mode so the overlay can sit on top of it
 
 ## Icon extraction notes
 
-The extractor uses [CUE4Parse](https://github.com/FabianFG/CUE4Parse). It looks for textures with "icon" in
-the name inside each item's folder, then anywhere whose name mentions the item. Options:
+Extraction uses [CUE4Parse](https://github.com/FabianFG/CUE4Parse). It looks for textures with "icon" in
+the name inside each item's folder, then anywhere whose name mentions the item. If many icons come out
+missing, run the command-line tool to debug:
+
+```
+dotnet run --project tools/Remnant2Overlay.IconExtractor -- --list
+```
+
+Options (the overlay reads the same ones from `UnrealVersion` and `UsmapPath` in `settings.json`):
 
 - `--game GAME_UE5_2` Unreal version to read the paks as.
 - `--usmap <file>` mappings file, if the game needs one to read assets.
 - `--aes <0x…>` key, if the paks are encrypted.
+- `--paks <dir>` game folder, if it isn't found through Steam.
 - `--out <dir>` output folder.
+- `--force` clear the cache and extract everything again.
 
 Results are listed in `index.json` in the output folder. Icons are game assets and are never committed here.
 

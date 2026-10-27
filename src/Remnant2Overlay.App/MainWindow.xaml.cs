@@ -6,6 +6,7 @@ using System.Windows.Input;
 using System.Windows.Interop;
 using System.Windows.Threading;
 using Microsoft.Win32;
+using Remnant2Overlay.Icons;
 
 namespace Remnant2Overlay.App;
 
@@ -43,6 +44,8 @@ public partial class MainWindow : Window
 
         _vm.LoadSave(null);
         WatchSave();
+        // Fill in any icons missing from the local cache; runs in the background.
+        Loaded += (_, _) => _ = _vm.SyncIconsAsync();
     }
 
     // The game rewrites the saves on checkpoints; reload shortly after they settle.
@@ -97,6 +100,7 @@ public partial class MainWindow : Window
         _settings.Height = Height;
         _settings.Save();
         UnregisterHotKey(new WindowInteropHelper(this).Handle, HotkeyId);
+        _vm.CancelIconSync();
         _watcher?.Dispose();
         base.OnClosing(e);
     }
@@ -125,6 +129,20 @@ public partial class MainWindow : Window
         WatchSave();
     }
 
+    private void GameFolder_Click(object sender, RoutedEventArgs e)
+    {
+        var dialog = new OpenFolderDialog { Title = "Select your Remnant 2 install folder" };
+        if (dialog.ShowDialog(this) != true) return;
+        if (GameLocator.NormalizePaksFolder(dialog.FolderName) is null)
+        {
+            MessageBox.Show(this, "That folder doesn't contain Remnant 2's .pak files. Pick the Remnant2 folder in steamapps\\common.",
+                "Remnant 2 Overlay", MessageBoxButton.OK, MessageBoxImage.Warning);
+            return;
+        }
+        _vm.SetGameFolder(dialog.FolderName);
+    }
+
+    private void ReextractIcons_Click(object sender, RoutedEventArgs e) => _ = _vm.SyncIconsAsync(force: true);
     private void Reload_Click(object sender, RoutedEventArgs e) => _vm.LoadSave(_settings.ProfilePath);
     private void ClearManual_Click(object sender, RoutedEventArgs e) => _vm.ClearManual();
     private void Minimize_Click(object sender, RoutedEventArgs e) => Hide();

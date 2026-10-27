@@ -13,16 +13,26 @@ public sealed class ItemTileViewModel : INotifyPropertyChanged
     private string _reason = "";
     private string? _where;
     private bool? _manualOverride;
+    private ImageSource? _icon;
 
-    public ItemTileViewModel(ItemInfo item, string iconDir)
+    public ItemTileViewModel(ItemInfo item, string iconPath)
     {
         Item = item;
-        Icon = LoadIcon(Path.Combine(iconDir, item.AssetName + ".png"));
+        _icon = LoadIcon(iconPath);
     }
 
     public ItemInfo Item { get; }
-    public ImageSource? Icon { get; }
-    public bool HasIcon => Icon is not null;
+    public ImageSource? Icon => _icon;
+    public bool HasIcon => _icon is not null;
+
+    /// <summary>Loads the icon from the cache, e.g. after it has just been extracted.</summary>
+    public void ReloadIcon(string iconPath)
+    {
+        _icon = LoadIcon(iconPath);
+        Changed(nameof(Icon));
+        Changed(nameof(HasIcon));
+    }
+
     public string Name => Item.DisplayName;
     public string Initials => string.Concat(Name.Split(' ', StringSplitOptions.RemoveEmptyEntries).Take(2).Select(w => w[0]));
     public string CategoryName => App.CategoryLabel(Item.Category);

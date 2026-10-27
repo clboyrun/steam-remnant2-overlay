@@ -175,15 +175,21 @@
 
             <!-- Status bar -->
             <DockPanel DockPanel.Dock="Bottom" Margin="0,8,0,0">
-                <StackPanel Orientation="Horizontal" DockPanel.Dock="Right" Margin="0,0,14,0">
+                <WrapPanel DockPanel.Dock="Bottom" Margin="0,6,14,0">
                     <ToggleButton Content="Manual mode" IsChecked="{Binding ManualMode}" Padding="10,4" Margin="0,0,6,0"
                                   ToolTip="Click tiles to mark them owned or missing yourself" />
                     <Button Content="Clear manual" Style="{StaticResource FlatButton}" Click="ClearManual_Click" />
                     <Button Content="Open save…" Style="{StaticResource FlatButton}" Click="OpenSave_Click" />
                     <Button Content="Reload" Style="{StaticResource FlatButton}" Click="Reload_Click" />
+                    <Button Content="Game folder…" Style="{StaticResource FlatButton}" Click="GameFolder_Click"
+                            ToolTip="Where Remnant 2 is installed (used to extract icons)" />
+                    <Button Content="Re-extract icons" Style="{StaticResource FlatButton}" Click="ReextractIcons_Click" />
+                </WrapPanel>
+                <StackPanel VerticalAlignment="Center">
+                    <TextBlock Text="{Binding Status}" Foreground="{StaticResource Muted}" TextTrimming="CharacterEllipsis" />
+                    <TextBlock Text="{Binding IconStatus}" Foreground="{StaticResource Muted}" FontSize="11"
+                               TextTrimming="CharacterEllipsis" />
                 </StackPanel>
-                <TextBlock Text="{Binding Status}" Foreground="{StaticResource Muted}" VerticalAlignment="Center"
-                           TextTrimming="CharacterEllipsis" />
             </DockPanel>
 
             <Grid>

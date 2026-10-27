@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <OutputType>Exe</OutputType>
@@ -8,12 +8,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="CUE4Parse" Version="1.2.2.202609" />
-    <PackageReference Include="CUE4Parse-Conversion" Version="1.2.2.202609" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <ProjectReference Include="..\..\src\Remnant2Overlay.SaveReader\Remnant2Overlay.SaveReader.csproj" />
+    <ProjectReference Include="..\..\src\Remnant2Overlay.Icons\Remnant2Overlay.Icons.csproj" />
   </ItemGroup>
 
 </Project>

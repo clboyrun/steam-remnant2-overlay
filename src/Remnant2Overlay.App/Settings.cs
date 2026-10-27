@@ -14,6 +14,14 @@ public sealed class Settings
     private static string FilePath => Path.Combine(DataDir, "settings.json");
 
     public string? ProfilePath { get; set; }
+
+    /// <summary>Remnant 2 Paks folder, if it isn't found through Steam automatically.</summary>
+    public string? GamePaksPath { get; set; }
+
+    /// <summary>Optional icon-extraction tweaks: CUE4Parse EGame name and a .usmap mappings file.</summary>
+    public string? UnrealVersion { get; set; }
+    public string? UsmapPath { get; set; }
+
     public int CharacterIndex { get; set; }
     public double Opacity { get; set; } = 0.92;
     public double? Left { get; set; }

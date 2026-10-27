@@ -34,4 +34,4 @@ SOFTWARE.
 ## Game assets
 
 Remnant 2 names, data and icons belong to Gunfire Games. Icons are extracted locally from your own
-game install by `tools/Remnant2Overlay.IconExtractor` and are not committed to this repository.
+game install into a local cache and are not committed to this repository.

@@ -205,3 +205,33 @@ public class RunAnalysisTests
         Assert.Contains(RunAnalysis.Evaluate(Db, characters[0], run), s => s.Status == RunItemStatus.Available);
     }
 }
+
+public class IconCacheTests
+{
+    [Fact]
+    public void ItemsToExtract_SkipsCachedAndKnownMissing_UntilGameFilesChange()
+    {
+        string dir = Path.Combine(Path.GetTempPath(), "r2o-icons-" + Guid.NewGuid());
+        try
+        {
+            var db = ItemDatabase.LoadEmbedded();
+            var items = db.Items.Take(3).ToList();
+            var cache = new Remnant2Overlay.Icons.IconCache(dir);
+            Directory.CreateDirectory(dir);
+            File.WriteAllBytes(cache.PathFor(items[0].AssetName), [1]);
+            var index = new Remnant2Overlay.Icons.IconIndex { PaksSignature = "v1", Missing = [items[1].AssetName] };
+
+            Assert.Equal([items[2]], cache.ItemsToExtract(items, index, "v1"));
+            Assert.Equal([items[1], items[2]], cache.ItemsToExtract(items, index, "v2"));
+
+            cache.SaveIndex(index);
+            Assert.Contains(items[1].AssetName, cache.LoadIndex().Missing);
+            cache.Clear();
+            Assert.Equal(items, cache.ItemsToExtract(items, cache.LoadIndex(), "v1"));
+        }
+        finally
+        {
+            if (Directory.Exists(dir)) Directory.Delete(dir, recursive: true);
+        }
+    }
+}

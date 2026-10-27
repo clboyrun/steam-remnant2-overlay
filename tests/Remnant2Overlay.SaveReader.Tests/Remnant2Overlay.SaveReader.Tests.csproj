@@ -24,6 +24,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\..\src\Remnant2Overlay.SaveReader\Remnant2Overlay.SaveReader.csproj" />
+    <ProjectReference Include="..\..\src\Remnant2Overlay.Icons\Remnant2Overlay.Icons.csproj" />
   </ItemGroup>
 
 </Project>
