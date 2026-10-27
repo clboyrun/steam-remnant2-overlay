@@ -20,11 +20,16 @@ if (-not (Test-Path (Join-Path $ue4ss '.git'))) {
     throw 'RE-UE4SS not found. Clone it first: git clone -b v3.0.1 https://github.com/UE4SS-RE/RE-UE4SS.git native/RE-UE4SS'
 }
 
-# The submodules are listed as git@github.com:... (SSH). Rewrite them to HTTPS for this command only, so Git
-# signs in through the browser like any other GitHub clone. UEPseudo needs your GitHub linked to Epic Games.
+# RE-UE4SS fetches its submodules and many CMake dependencies from git@github.com:... (SSH). Rewrite those to HTTPS
+# for every git this script starts (CMake's included), without touching your Git settings, so Git signs in through
+# the browser like any other GitHub clone. UEPseudo needs your GitHub linked to Epic Games.
+$env:GIT_CONFIG_COUNT = '1'
+$env:GIT_CONFIG_KEY_0 = 'url.https://github.com/.insteadOf'
+$env:GIT_CONFIG_VALUE_0 = 'git@github.com:'
+
 if (-not (Get-ChildItem (Join-Path $ue4ss 'deps\first\Unreal') -ErrorAction SilentlyContinue)) {
     Write-Host 'Fetching RE-UE4SS submodules (sign in to GitHub if asked)...'
-    git -C $ue4ss -c 'url.https://github.com/.insteadOf=git@github.com:' submodule update --init --recursive
+    git -C $ue4ss submodule update --init --recursive
     if ($LASTEXITCODE -ne 0) {
         throw 'Couldn''t fetch the submodules. "Repository not found" for UEPseudo means your GitHub isn''t linked to Epic Games yet: https://www.unrealengine.com/en-US/ue-on-github'
     }
