@@ -120,7 +120,16 @@ public sealed class MainViewModel : INotifyPropertyChanged
         }
     }
 
-    public string Show { get => _show; set { if (Set(ref _show, value)) Refresh(); } }
+    public string Show
+    {
+        get => _show;
+        set
+        {
+            if (!Set(ref _show, value)) return;
+            Refresh();
+            BuildRunTree(); // the run map follows the filter too
+        }
+    }
     public string Search { get => _search; set { if (Set(ref _search, value)) Refresh(); } }
     public bool ManualMode { get => _manualMode; set => Set(ref _manualMode, value); }
     public bool ShowRunView { get => _showRunView; set => Set(ref _showRunView, value); }
@@ -449,7 +458,10 @@ public sealed class MainViewModel : INotifyPropertyChanged
 
         // Missing tracked items by db Id, after manual overrides.
         var tilesById = Tiles.ToDictionary(t => t.Item.Id);
-        bool Wanted(RunItem item) => tilesById.TryGetValue(item.Id, out var t) && !t.Owned && Collectable.Contains(item.Status);
+        // "Available this run" leaves out drops already taken or skipped in this run.
+        bool hideMissed = _show == "Available this run";
+        bool Wanted(RunItem item) => tilesById.TryGetValue(item.Id, out var t) && !t.Owned && Collectable.Contains(item.Status)
+                                     && !(hideMissed && item.Status == RunItemStatus.MissedThisRun);
         // Evaluate also flags "available" drops whose quest item or unlock isn't in the save.
         RunItem Effective(RunItem item) =>
             item.Status == RunItemStatus.Available && tilesById[item.Id].Status == RunItemStatus.NeedsPrerequisite
