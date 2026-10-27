@@ -45,9 +45,12 @@ Ctrl+Shift+O) and the panel stays current. It picks up changes within about a se
 
    ```powershell
    cd native/Remnant2Overlay.InGame
-   cmake -B build -A x64
+   cmake -B build -G "Visual Studio 17 2022" -A x64
    cmake --build build --config Release
    ```
+
+   If CMake says the generator "does not support platform specification", an earlier run picked NMake and cached
+   it: delete the `build` folder and run the commands again.
 
 4. Install both into the game (finds the game through Steam; pass `-GameDir` if it doesn't):
 

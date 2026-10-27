@@ -48,7 +48,7 @@ $mod = Find-Newest $PSScriptRoot 'Remnant2Overlay.dll'
 if (-not $mod) { throw 'Build the mod first: cd native; xmake f -m "Game__Shipping__Win64" -y; xmake' }
 $panel = Find-Newest (Join-Path $PSScriptRoot 'Remnant2Overlay.InGame') 'Remnant2Overlay.InGame.dll'
 if (-not $panel) { $panel = Get-Item (Join-Path $env:LOCALAPPDATA 'Remnant2Overlay\Remnant2Overlay.InGame.dll') -ErrorAction SilentlyContinue }
-if (-not $panel) { throw 'Build the panel first: cd native\Remnant2Overlay.InGame; cmake -B build -A x64; cmake --build build --config Release' }
+if (-not $panel) { throw 'Build the panel first: cd native\Remnant2Overlay.InGame; cmake -B build -G "Visual Studio 17 2022" -A x64; cmake --build build --config Release' }
 
 $target = Join-Path $mods 'Remnant2Overlay'
 New-Item -ItemType Directory -Force -Path (Join-Path $target 'dlls') | Out-Null

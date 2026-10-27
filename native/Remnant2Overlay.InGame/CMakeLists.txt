@@ -1,6 +1,6 @@
 # In-game UI for Remnant 2: a DLL loaded into the game that draws an ImGui panel over its DirectX 12 frames.
 # Build (x64, from a Developer PowerShell or Visual Studio's "Open Folder"):
-#   cmake -B build -A x64
+#   cmake -B build -G "Visual Studio 17 2022" -A x64
 #   cmake --build build --config Release
 # The DLL is copied to %LOCALAPPDATA%\Remnant2Overlay; install-mod.ps1 puts it next to the UE4SS mod.
 cmake_minimum_required(VERSION 3.24)
