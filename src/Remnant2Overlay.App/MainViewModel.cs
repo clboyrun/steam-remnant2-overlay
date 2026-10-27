@@ -85,6 +85,7 @@ public sealed class MainViewModel : INotifyPropertyChanged
         new("Amulets", [ItemCategory.Amulet]),
         new("Mutators", [ItemCategory.Mutator]),
         new("Relics", [ItemCategory.Relic]),
+        new("Traits", [ItemCategory.Trait]),
     ];
 
     public IReadOnlyList<WorldFilter> Worlds { get; } =
@@ -127,7 +128,16 @@ public sealed class MainViewModel : INotifyPropertyChanged
         }
     }
 
-    public string Show { get => _show; set { if (Set(ref _show, value)) Refresh(); } }
+    public string Show
+    {
+        get => _show;
+        set
+        {
+            if (!Set(ref _show, value)) return;
+            Refresh();
+            BuildRunTree(); // the run map follows the filter too
+        }
+    }
     public string Search { get => _search; set { if (Set(ref _search, value)) Refresh(); } }
     public bool ManualMode { get => _manualMode; set => Set(ref _manualMode, value); }
     public bool ShowRunView { get => _showRunView; set => Set(ref _showRunView, value); }
@@ -153,6 +163,30 @@ public sealed class MainViewModel : INotifyPropertyChanged
     }
 
     public void CloseDetails() => Details = null;
+
+    /// <summary>Writes what the in-game UI shows. Cheap enough to do on every change.</summary>
+    private void ExportInGameState()
+    {
+        try
+        {
+            var character = CurrentCharacter;
+            var run = CurrentRun;
+            new InGameState(
+                1,
+                DateTime.Now,
+                character?.Description ?? (CharacterNames.Count > _characterIndex ? CharacterNames[_characterIndex] : ""),
+                _run?.Label ?? "",
+                RunSummary,
+                NothingLeft,
+                QuestStatus.Split(Environment.NewLine, StringSplitOptions.RemoveEmptyEntries),
+                Tiles.Select(t => InGameItem.From(new ItemDetails(t, character, run))).ToList()).Save();
+        }
+        catch (Exception e)
+        {
+            // The in-game UI is optional; never let it break the overlay.
+            Status = $"Couldn't write in-game state: {e.Message}";
+        }
+    }
 
     // Statuses change with the save, run or manual marks; keep the open panel current.
     private void RefreshDetails()
@@ -322,6 +356,7 @@ public sealed class MainViewModel : INotifyPropertyChanged
 
     public void CancelIconSync() => _iconSync?.Cancel();
 
+
     public void SetGameFolder(string folder)
     {
         _settings.GamePaksPath = folder;
@@ -350,6 +385,8 @@ public sealed class MainViewModel : INotifyPropertyChanged
         Refresh();
         BuildRunTree();
         RefreshDetails();
+
+        ExportInGameState();
         SyncNeeded?.Invoke();
     }
 
@@ -364,6 +401,8 @@ public sealed class MainViewModel : INotifyPropertyChanged
         Refresh();
         BuildRunTree();
         RefreshDetails();
+        
+        ExportInGameState();
         SyncNeeded?.Invoke();
     }
 
@@ -457,6 +496,7 @@ public sealed class MainViewModel : INotifyPropertyChanged
         Refresh();
         BuildRunTree();
         RefreshDetails();
+        ExportInGameState();
     }
 
     private void UpdateRunChoices(CharacterRuns? character)
@@ -497,7 +537,19 @@ public sealed class MainViewModel : INotifyPropertyChanged
 
         // Missing tracked items by db Id, after manual overrides.
         var tilesById = Tiles.ToDictionary(t => t.Item.Id);
-        bool Wanted(RunItem item) => tilesById.TryGetValue(item.Id, out var t) && !t.Owned && Collectable.Contains(item.Status);
+        // "Available this run" leaves out drops already taken or skipped in this run.
+        bool hideMissed = _show == "Available this run";
+        bool Wanted(RunItem item) => tilesById.TryGetValue(item.Id, out var t) && !t.Owned && Collectable.Contains(item.Status)
+                                     && !(hideMissed && item.Status == RunItemStatus.MissedThisRun);
+        // Evaluate also flags "available" drops whose quest item or unlock isn't in the save.
+        RunItem Effective(RunItem item) =>
+            item.Status == RunItemStatus.Available && tilesById[item.Id].Status == RunItemStatus.NeedsPrerequisite
+                ? item with
+                {
+                    Status = RunItemStatus.NeedsPrerequisite,
+                    Prerequisite = string.Join(", ", RunAnalysis.MissingRequirements(tilesById[item.Id].Item.Prerequisite, CurrentCharacter, run)),
+                }
+                : item;
 
         int available = 0, gated = 0;
         foreach (var zone in run.Zones)
@@ -508,7 +560,7 @@ public sealed class MainViewModel : INotifyPropertyChanged
                 var sourceNodes = new List<RunNode>();
                 foreach (var source in location.Sources)
                 {
-                    var items = source.Items.Where(Wanted).ToList();
+                    var items = source.Items.Where(Wanted).Select(Effective).ToList();
                     if (items.Count == 0) continue;
                     available += items.Count(i => i.Status == RunItemStatus.Available);
                     gated += items.Count(i => i.Status == RunItemStatus.NeedsPrerequisite);

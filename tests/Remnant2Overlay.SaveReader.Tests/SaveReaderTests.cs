@@ -191,6 +191,32 @@ public class RunAnalysisTests
     }
 
     [Fact]
+    public void Evaluate_FlagsAvailableItemWhoseQuestItemIsMissing()
+    {
+        // Cervine Keepsake needs the Red Doe Sigil amulet.
+        var run = Run(Item("Amulet_CervineKeepsake", RunItemStatus.Available));
+
+        var without = RunAnalysis.Evaluate(Db, Character(run), run).Single(s => s.Item.Id == "Amulet_CervineKeepsake");
+        var with = RunAnalysis.Evaluate(Db, Character(run, "Amulet_RedDoeSigil"), run).Single(s => s.Item.Id == "Amulet_CervineKeepsake");
+
+        Assert.Equal(RunItemStatus.NeedsPrerequisite, without.Status);
+        Assert.Contains("Red Doe Sigil", without.Reason);
+        Assert.Equal(RunItemStatus.Available, with.Status);
+    }
+
+    [Fact]
+    public void Evaluate_FlagsUnlockGatedVendorItem()
+    {
+        // Butcher's Fetish is sold in Ward 13 after finishing the campaign on Veteran.
+        var run = Run();
+
+        var status = RunAnalysis.Evaluate(Db, Character(run), run).Single(s => s.Item.Id == "Amulet_ButchersFetish");
+
+        Assert.Equal(RunItemStatus.NeedsPrerequisite, status.Status);
+        Assert.Contains("Veteran", status.Reason);
+    }
+
+    [Fact]
     public void Analyze_RealSaves_WhenAvailable()
     {
         // Set REMNANT2_PROFILE to a copy of profile.sav with its save_N.sav files next to it.
@@ -202,7 +228,10 @@ public class RunAnalysisTests
         Assert.NotEmpty(characters);
         var run = characters[0].Get(characters[0].ActiveSlot)!;
         Assert.Contains(run.Zones, z => z.World != "Ward 13");
-        Assert.Contains(RunAnalysis.Evaluate(Db, characters[0], run), s => s.Status == RunItemStatus.Available);
+        var statuses = RunAnalysis.Evaluate(Db, characters[0], run);
+        Assert.Contains(statuses, s => s.Status == RunItemStatus.Available);
+        // Traits are unlockables too: the save lists the ones the character has.
+        Assert.Contains(statuses, s => s.Item.Category == ItemCategory.Trait && s.Status == RunItemStatus.Owned);
 
         // Every item with a prerequisite gets one check per comma-separated group, with readable names.
         foreach (var item in Db.Items.Where(i => i.Prerequisite is not null))

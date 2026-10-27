@@ -486,3 +486,13 @@ $RECYCLE.BIN/
 # Remnant 2 saves (personal data)
 *.sav
 *.sav.bin
+
+# Native builds: UE4SS checkout (needs Epic-linked GitHub access), CMake and xmake output
+native/RE-UE4SS/
+native/**/build/
+native/.xmake/
+native/Binaries/
+native/Intermediates/
+native/vsxmake*/
+native/build-mod/
+native/build-mod-deps/

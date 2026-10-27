@@ -1,7 +1,7 @@
 # Remnant 2 Overlay
 
 A Windows companion window for Remnant 2 (Steam) that reads your save, shows which weapons, armor,
-mutators, rings and amulets you own or are missing, and later suggests run paths for the missing ones.
+mutators, rings, amulets, relics and traits you own or are missing, and later suggests run paths for the missing ones.
 
 Steam's own overlay can't host third-party content, so this is a borderless, always-on-top window.
 Run the game in **borderless windowed** mode so the overlay can sit on top of it.
@@ -17,6 +17,7 @@ Run the game in **borderless windowed** mode so the overlay can sit on top of it
 | `src/Remnant2Overlay.Companion` | Phone companion app (Blazor WebAssembly, installable from the browser) |
 | `src/Remnant2Overlay.Cli` | Prints owned/total per category and the owned items from a `profile.sav` |
 | `tools/Remnant2Overlay.IconExtractor` | Command-line icon extraction, for re-running or debugging it |
+| `native/` | In-game panel: UE4SS C++ mod plus a DirectX 12 ImGui panel (Home in game). See [native/README.md](native/README.md) |
 | `tools/` scripts | Standalone save decompression (PowerShell/Python), item list builder, how-to guide |
 
 ## Getting started (Windows)

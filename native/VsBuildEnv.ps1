@@ -1,0 +1,78 @@
+# Shared by build-panel.ps1 and build-mod.ps1: finds the newest Visual Studio with the C++ tools, loads its 64-bit
+# build environment into this PowerShell session, and returns the CMake and Ninja that ship with it.
+#
+# -Vs2022Compiler picks the MSVC 14.38-14.40 compiler from any installed Visual Studio, newest first. UE4SS 3.0.x's
+# Unreal headers (UEPseudo) don't compile with 14.41 or newer, VS 2026's 14.5x included.
+function Enter-VsBuildEnv([switch]$Vs2022Compiler) {
+    $vswhere = Join-Path ${env:ProgramFiles(x86)} 'Microsoft Visual Studio\Installer\vswhere.exe'
+    if (-not (Test-Path $vswhere)) { throw 'Visual Studio not found (no vswhere.exe). Install Visual Studio with "Desktop development with C++".' }
+    $all = @(& $vswhere -all -prerelease -products * -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -property installationPath)
+    if ($all.Count -eq 0) { throw 'No Visual Studio with the C++ tools found. In the Visual Studio Installer, add "Desktop development with C++".' }
+    $vs = & $vswhere -latest -prerelease -products * -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -property installationPath
+
+    $devCmdArgs = '-arch=x64 -host_arch=x64'
+    if ($Vs2022Compiler) {
+        # Every installed 14.38-14.40 toolset, in any Visual Studio, newest version first.
+        $toolset = $all | ForEach-Object {
+            $msvc = Join-Path $_ 'VC\Tools\MSVC'
+            Get-ChildItem $msvc -Directory -ErrorAction SilentlyContinue |
+                Where-Object { $_.Name -match '^14\.(3[89]|40)\.' } |
+                ForEach-Object { [pscustomobject]@{ Vs = $msvc | Split-Path | Split-Path | Split-Path; Version = [version]$_.Name } }
+        } | Sort-Object Version -Descending | Select-Object -First 1
+        if (-not $toolset) {
+            throw 'UE4SS 3.0.x needs the MSVC 14.40 compiler (14.41 and newer fail on its Unreal headers). In the Visual Studio Installer: Modify > Individual components > search "14.40" > tick "MSVC v143 - VS 2022 C++ x64/x86 build tools (v14.40-17.10)", then run this again.'
+        }
+        $vs = $toolset.Vs
+        $devCmdArgs += " -vcvars_ver=$($toolset.Version)"
+        Write-Host "Using the MSVC $($toolset.Version) compiler"
+    }
+    Write-Host "Using Visual Studio at $vs"
+
+    if ($Vs2022Compiler) {
+        # Load vcvarsall for that exact toolset and copy its environment into this session. (VsDevCmd through
+        # Enter-VsDevShell kept the newest compiler first on PATH when a dev shell had already run in the window.)
+        $script = Join-Path ([IO.Path]::GetTempPath()) "r2o-vcvars-$PID.cmd"
+        $vcvars = Join-Path $vs 'VC\Auxiliary\Build\vcvarsall.bat'
+        Set-Content -Path $script -Encoding Ascii -Value @(
+            "@call `"$vcvars`" x64 -vcvars_ver=$($toolset.Version) >nul",
+            '@if errorlevel 1 exit /b 1',
+            '@set')
+        $environment = & cmd.exe /d /c $script
+        $failed = $LASTEXITCODE -ne 0
+        Remove-Item $script -ErrorAction SilentlyContinue
+        if ($failed) { throw "vcvarsall.bat couldn't set up the $($toolset.Version) compiler." }
+        foreach ($line in $environment) {
+            if ($line -match '^([^=]+)=(.*)$') { Set-Item -Path "env:$($Matches[1])" -Value $Matches[2] }
+        }
+        $cl = (Get-Command cl.exe -ErrorAction SilentlyContinue).Source
+        if ($cl -notlike "*\$($toolset.Version)\*") { throw "Expected the $($toolset.Version) compiler but cl.exe is $cl." }
+        Write-Host "Compiler: $cl"
+    }
+    else {
+        # Enter-VsDevShell (what Launch-VsDevShell.ps1 wraps) passes these straight to VsDevCmd.bat.
+        Import-Module (Join-Path $vs 'Common7\Tools\Microsoft.VisualStudio.DevShell.dll')
+        Enter-VsDevShell -VsInstallPath $vs -SkipAutomaticLocation -DevCmdArguments $devCmdArgs | Out-Null
+    }
+
+    $tools = [pscustomobject]@{
+        Compiler = (Get-Command cl.exe -ErrorAction SilentlyContinue).Source
+        CMake = Join-Path $vs 'Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\bin\cmake.exe'
+        Ninja = Join-Path $vs 'Common7\IDE\CommonExtensions\Microsoft\CMake\Ninja\ninja.exe'
+    }
+    if (-not (Test-Path $tools.CMake) -or -not (Test-Path $tools.Ninja)) {
+        throw 'Visual Studio''s CMake tools are missing. In the Visual Studio Installer, under Desktop development with C++, tick "C++ CMake tools for Windows".'
+    }
+    return $tools
+}
+
+# Deletes a build folder configured with a different generator or compiler; CMake can't switch either in place.
+function Reset-BuildFolderIfNotNinja([string]$build, [switch]$Force) {
+    $cache = Join-Path $build 'CMakeCache.txt'
+    $compiler = (Get-Command cl.exe -ErrorAction SilentlyContinue).Source -replace '\\', '/'
+    $stale = (Test-Path $cache) -and (
+        -not (Select-String -Quiet -Path $cache -Pattern 'CMAKE_GENERATOR:INTERNAL=Ninja') -or
+        ($compiler -and -not (Select-String -Quiet -SimpleMatch -Path $cache -Pattern $compiler)))
+    if ($Force -or $stale) {
+        Remove-Item -Recurse -Force $build -ErrorAction SilentlyContinue
+    }
+}
