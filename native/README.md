@@ -4,6 +4,10 @@ Shows the overlay inside Remnant 2: press **Home** in game to open a panel with 
 quest status, and each item's requirements and how to get it. While the panel is open, the mouse and keyboard go
 to the panel and not the game.
 
+Tick **Keep on screen** in the panel to leave a small read-only overlay up after Home closes the panel: the panel's
+current filter as a short list, plus the selected item. It lets every click and key through to the game. Drag it
+into place while the panel is open; the setting and position are remembered.
+
 | Path | What it is |
 | --- | --- |
 | `Remnant2Overlay.UE4SS` | The UE4SS C++ mod (CMake for UE4SS 3.0.x, xmake for newer). UE4SS loads it at game start, and it loads the panel. Live game data will be read here next. |

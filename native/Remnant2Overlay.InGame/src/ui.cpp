@@ -6,6 +6,8 @@
 #include <imgui.h>
 
 #include <algorithm>
+#include <filesystem>
+#include <fstream>
 #include <atomic>
 #include <set>
 
@@ -15,8 +17,10 @@ namespace r2o::ui
     {
         constexpr ULONGLONG HintMilliseconds = 8000;
 
-        std::atomic<bool> g_visible{false};
+        std::atomic<bool> g_visible{false}; // the full panel is open and takes the mouse and keyboard
+        bool g_pinned = false;              // keep a read-only overlay on screen while the panel is closed
         ULONGLONG g_hintUntil = 0;
+        constexpr int PinnedRows = 15;
 
         State g_state;
         std::string g_error;
@@ -80,6 +84,17 @@ namespace r2o::ui
             g_categories.insert(g_categories.end(), categories.begin(), categories.end());
             auto it = std::find(g_categories.begin(), g_categories.end(), current);
             g_category = it == g_categories.end() ? 0 : int(it - g_categories.begin());
+        }
+
+        // Remembered across game launches: the file exists while "Keep on screen" is ticked.
+        std::filesystem::path PinnedFile() { return DataDir() / L"ingame-pinned"; }
+
+        void SetPinned(bool pinned)
+        {
+            g_pinned = pinned;
+            std::error_code ec;
+            if (pinned) std::ofstream(PinnedFile()).put('1');
+            else std::filesystem::remove(PinnedFile(), ec);
         }
 
         void Heading(const char* text)
@@ -168,8 +183,14 @@ namespace r2o::ui
                 ImGui::EndCombo();
             }
             ImGui::SameLine();
-            ImGui::SetNextItemWidth(-FLT_MIN);
+            ImGui::SetNextItemWidth(-ImGui::CalcTextSize("Keep on screen").x - ImGui::GetFrameHeight() * 2);
             ImGui::InputTextWithHint("##search", "Search name or where it drops", g_search, sizeof g_search);
+            ImGui::SameLine();
+            if (bool pinned = g_pinned; ImGui::Checkbox("Keep on screen", &pinned)) SetPinned(pinned);
+            if (ImGui::IsItemHovered())
+                ImGui::SetTooltip("After Home closes the panel, keep a small overlay of this list on screen.\n"
+                                  "It ignores the mouse and keyboard, so you can keep playing.\n"
+                                  "Drag it where you want it while the panel is open.");
 
             const Item* selected = nullptr;
             const float listWidth = ImGui::GetContentRegionAvail().x * 0.5f;
@@ -220,6 +241,68 @@ namespace r2o::ui
             ImGui::End();
         }
 
+        // The read-only overlay: the panel's current filter as a short list, plus the selected item's status.
+        // While the panel is open it can be dragged and resized; otherwise it lets every click through to the game.
+        void DrawPinned(bool interactive)
+        {
+            const auto* viewport = ImGui::GetMainViewport();
+            ImGui::SetNextWindowPos({viewport->WorkPos.x + viewport->WorkSize.x - 380, viewport->WorkPos.y + 60},
+                                    ImGuiCond_FirstUseEver);
+            ImGui::SetNextWindowSize({340, 0}, ImGuiCond_FirstUseEver);
+            ImGui::SetNextWindowBgAlpha(interactive ? 0.9f : 0.6f);
+            ImGuiWindowFlags flags = ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoFocusOnAppearing;
+            if (!interactive) flags |= ImGuiWindowFlags_NoInputs | ImGuiWindowFlags_NoTitleBar;
+            if (!ImGui::Begin("Remnant 2 Overlay (on screen)", nullptr, flags))
+            {
+                ImGui::End();
+                return;
+            }
+
+            if (g_state.Items.empty())
+            {
+                Wrapped(Muted, g_error.empty() ? "No items yet." : g_error);
+                ImGui::End();
+                return;
+            }
+
+            ImGui::TextColored(Accent, "%s", ShowOptions[g_show]);
+            if (g_category > 0)
+            {
+                ImGui::SameLine();
+                ImGui::TextColored(Muted, "· %s", g_categories[g_category].c_str());
+            }
+            Wrapped(g_state.NothingLeft ? MissingColor : AvailableColor, g_state.Summary);
+
+            int shown = 0, matching = 0;
+            for (const auto& item : g_state.Items)
+            {
+                if (!Matches(item)) continue;
+                if (++matching > PinnedRows) continue;
+                shown++;
+                ImGui::TextColored(StatusColor(item.Status), "●");
+                ImGui::SameLine();
+                ImGui::TextUnformatted(item.Name.c_str());
+                if (!item.World.empty())
+                {
+                    ImGui::SameLine();
+                    ImGui::TextColored(Muted, "%s", item.World.c_str());
+                }
+            }
+            if (matching > shown) ImGui::TextColored(Muted, "…and %d more", matching - shown);
+            if (matching == 0) ImGui::TextColored(Muted, "Nothing matches these filters.");
+
+            for (const auto& item : g_state.Items)
+            {
+                if (item.Name != g_selected) continue;
+                ImGui::Separator();
+                Wrapped(Text, item.Name);
+                Wrapped(StatusColor(item.Status), item.Reason);
+                for (const auto& r : item.Requirements)
+                    if (r.Met == false) Wrapped(MissingColor, "✗ " + r.Label);
+            }
+            ImGui::End();
+        }
+
         void DrawHint()
         {
             const auto* viewport = ImGui::GetMainViewport();
@@ -242,7 +325,7 @@ namespace r2o::ui
         g_hintUntil = 0;
     }
 
-    bool IsIdle() { return !g_visible && GetTickCount64() > g_hintUntil; }
+    bool IsIdle() { return !g_visible && !g_pinned && GetTickCount64() > g_hintUntil; }
 
     void Setup()
     {
@@ -296,6 +379,8 @@ namespace r2o::ui
         c[ImGuiCol_CheckMark] = Accent;
         c[ImGuiCol_TableRowBgAlt] = Hex(0xFFFFFF, 0.03f);
 
+        std::error_code ec;
+        g_pinned = std::filesystem::exists(PinnedFile(), ec);
         g_hintUntil = GetTickCount64() + HintMilliseconds;
     }
 
@@ -306,6 +391,7 @@ namespace r2o::ui
         // The game hides the OS cursor, so ImGui draws its own while the panel is open.
         ImGui::GetIO().MouseDrawCursor = g_visible;
         if (g_visible) DrawPanel();
-        else if (GetTickCount64() < g_hintUntil) DrawHint();
+        if (g_pinned) DrawPinned(g_visible);
+        if (!g_visible && GetTickCount64() < g_hintUntil) DrawHint();
     }
 }
