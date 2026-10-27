@@ -10,7 +10,7 @@ function Enter-VsBuildEnv([switch]$Vs2022Compiler) {
     if ($all.Count -eq 0) { throw 'No Visual Studio with the C++ tools found. In the Visual Studio Installer, add "Desktop development with C++".' }
     $vs = & $vswhere -latest -prerelease -products * -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -property installationPath
 
-    $devCmdArgs = ''
+    $devCmdArgs = '-arch=x64 -host_arch=x64'
     if ($Vs2022Compiler) {
         # Every installed v143 toolset, in any Visual Studio, newest version first.
         $toolset = $all | ForEach-Object {
@@ -23,14 +23,14 @@ function Enter-VsBuildEnv([switch]$Vs2022Compiler) {
             throw 'UE4SS 3.0.x needs the VS 2022 C++ compiler. In the Visual Studio Installer: Modify > Individual components > tick "MSVC v143 - VS 2022 C++ x64/x86 build tools (Latest)", then run this again.'
         }
         $vs = $toolset.Vs
-        $devCmdArgs = "-vcvars_ver=$($toolset.Version)"
+        $devCmdArgs += " -vcvars_ver=$($toolset.Version)"
         Write-Host "Using the VS 2022 compiler $($toolset.Version)"
     }
     Write-Host "Using Visual Studio at $vs"
 
-    $shellArgs = @{ Arch = 'amd64'; HostArch = 'amd64'; SkipAutomaticLocation = $true }
-    if ($devCmdArgs) { $shellArgs.DevCmdArguments = $devCmdArgs }
-    & (Join-Path $vs 'Common7\Tools\Launch-VsDevShell.ps1') @shellArgs | Out-Null
+    # Enter-VsDevShell (what Launch-VsDevShell.ps1 wraps) passes these straight to VsDevCmd.bat.
+    Import-Module (Join-Path $vs 'Common7\Tools\Microsoft.VisualStudio.DevShell.dll')
+    Enter-VsDevShell -VsInstallPath $vs -SkipAutomaticLocation -DevCmdArguments $devCmdArgs | Out-Null
 
     $tools = [pscustomobject]@{
         CMake = Join-Path $vs 'Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\bin\cmake.exe'
