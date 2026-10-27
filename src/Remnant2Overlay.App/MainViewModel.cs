@@ -211,44 +211,49 @@ public sealed class MainViewModel : INotifyPropertyChanged
         _iconSync?.Cancel();
         var cts = _iconSync = new CancellationTokenSource();
 
-        string? paks = _settings.GamePaksPath is { } custom ? GameLocator.NormalizePaksFolder(custom) : GameLocator.FindPaksFolder();
-        if (paks is null)
-        {
-            IconStatus = "Icons: Remnant 2 not found. Use Game folder… to point at it.";
-            return;
-        }
-
-        var options = new IconExtractorOptions(paks, _settings.UnrealVersion, _settings.UsmapPath);
-        var tilesByAsset = Tiles.ToDictionary(t => t.Item.AssetName);
-
-        // Created on the UI thread, so reports arrive on the UI thread.
-        var progress = new Progress<IconSyncProgress>(p =>
-        {
-            if (cts.IsCancellationRequested) return;
-            if (p.IconPath is not null && tilesByAsset.TryGetValue(p.AssetName, out var tile)) tile.ReloadIcon(p.IconPath);
-            IconStatus = $"Extracting icons {p.Done}/{p.Total}…";
-        });
-
-        var stage = new Progress<string>(message =>
-        {
-            if (!cts.IsCancellationRequested) IconStatus = "Icons: " + message;
-        });
+        // Everything goes to a log next to the cache, for diagnosing misses. Opened first so even
+        // "game not found" and start-up failures are recorded.
+        Directory.CreateDirectory(Settings.IconDir);
+        string logPath = Path.Combine(Settings.IconDir, "extract.log");
+        using var log = new StreamWriter(logPath, append: false) { AutoFlush = true };
+        void Log(string message) { lock (log) log.WriteLine(message); }
+        Log($"{DateTime.Now:u} icon sync (force={force}), cache={Settings.IconDir}");
 
         try
         {
+            string? paks = _settings.GamePaksPath is { } custom
+                ? GameLocator.NormalizePaksFolder(custom, Log)
+                : GameLocator.FindPaksFolder(Log);
+            if (paks is null)
+            {
+                Log("Remnant 2 not found.");
+                IconStatus = "Icons: Remnant 2 not found. Use Game folder… to point at it.";
+                return;
+            }
+
+            var options = new IconExtractorOptions(paks, _settings.UnrealVersion, _settings.UsmapPath);
+            Log($"paks={options.PaksDir} version={options.UnrealVersion ?? "default"} usmap={options.UsmapPath ?? "none"}");
+            var tilesByAsset = Tiles.ToDictionary(t => t.Item.AssetName);
+
+            // Created on the UI thread, so reports arrive on the UI thread.
+            var progress = new Progress<IconSyncProgress>(p =>
+            {
+                if (cts.IsCancellationRequested) return;
+                if (p.IconPath is not null && tilesByAsset.TryGetValue(p.AssetName, out var tile)) tile.ReloadIcon(p.IconPath);
+                IconStatus = $"Extracting icons {p.Done}/{p.Total}…";
+            });
+            var stage = new Progress<string>(message =>
+            {
+                if (!cts.IsCancellationRequested) IconStatus = "Icons: " + message;
+            });
+
             IconStatus = "Checking icons…";
             var result = await Task.Run(() =>
             {
                 if (force) _iconCache.Clear();
-                // Everything the extractor reports goes to a log next to the cache, for diagnosing misses.
-                Directory.CreateDirectory(Settings.IconDir);
-                using var log = new StreamWriter(Path.Combine(Settings.IconDir, "extract.log"), append: false);
-                log.WriteLine($"{DateTime.Now:u} paks={options.PaksDir} version={options.UnrealVersion ?? "default"}");
-                void Log(string message) { lock (log) log.WriteLine(message); }
-                var result = IconSync.Run(_iconCache, _db.Items, options, progress, Log, cts.Token, stage);
-                Log($"Done: {result.Extracted} extracted, {result.NotFound} not found");
-                return result;
+                return IconSync.Run(_iconCache, _db.Items, options, progress, Log, cts.Token, stage);
             }, cts.Token);
+            Log($"Done: {result.Extracted} extracted, {result.NotFound} not found");
 
             if (force)
                 foreach (var t in Tiles) t.ReloadIcon(_iconCache.PathFor(t.Item.AssetName));
@@ -260,11 +265,12 @@ public sealed class MainViewModel : INotifyPropertyChanged
         }
         catch (OperationCanceledException)
         {
-            // A newer sync or app shutdown took over.
+            Log("Cancelled.");
         }
         catch (Exception e)
         {
-            IconStatus = $"Icon extraction failed: {e.Message}";
+            Log(e.ToString());
+            IconStatus = $"Icon extraction failed: {e.Message} (details in {logPath})";
         }
     }
 

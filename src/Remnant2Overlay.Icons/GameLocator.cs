@@ -12,18 +12,20 @@ public static partial class GameLocator
     [GeneratedRegex("\"path\"\\s+\"([^\"]+)\"")]
     private static partial Regex LibraryPathRegex();
 
-    public static string? FindPaksFolder()
+    public static string? FindPaksFolder(Action<string>? log = null)
     {
         foreach (string library in SteamLibraries())
         {
             string paks = Path.Combine([library, "steamapps", "common", GameFolder, .. PaksSubPath]);
-            if (Directory.Exists(paks)) return paks;
+            bool found = Directory.Exists(paks);
+            log?.Invoke($"{(found ? "found" : "not at")} {paks}");
+            if (found) return paks;
         }
         return null;
     }
 
     /// <summary>Accepts the game folder, its Content folder, or Paks itself, and returns the Paks folder.</summary>
-    public static string? NormalizePaksFolder(string folder)
+    public static string? NormalizePaksFolder(string folder, Action<string>? log = null)
     {
         string[] candidates =
         [
@@ -32,7 +34,9 @@ public static partial class GameLocator
             Path.Combine(folder, "Content", "Paks"),
             Path.Combine([folder, .. PaksSubPath]),
         ];
-        return candidates.FirstOrDefault(c => Directory.Exists(c) && Directory.EnumerateFiles(c, "*.pak").Any());
+        string? paks = candidates.FirstOrDefault(c => Directory.Exists(c) && Directory.EnumerateFiles(c, "*.pak").Any());
+        log?.Invoke(paks is null ? $"no .pak files under {folder}" : $"found {paks}");
+        return paks;
     }
 
     private static IEnumerable<string> SteamLibraries()
