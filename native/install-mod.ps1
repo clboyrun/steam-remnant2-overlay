@@ -2,8 +2,9 @@
 .SYNOPSIS
   Installs the Remnant 2 Overlay UE4SS mod and its in-game panel into the game's UE4SS Mods folder.
 .DESCRIPTION
-  Copies the mod (built with xmake) as Mods\Remnant2Overlay\dlls\main.dll, the panel (built with CMake) next to it,
-  and enables the mod. UE4SS must already be installed in Remnant2\Binaries\Win64.
+  Copies the mod (built with build-mod.ps1) as Mods\Remnant2Overlay\dlls\main.dll, the panel (built with
+  build-panel.ps1) next to it, and the HUD list (a Lua mod) as Mods\Remnant2OverlayHUD, and enables both.
+  UE4SS must already be installed in Remnant2\Binaries\Win64.
 .EXAMPLE
   .\native\install-mod.ps1
   .\native\install-mod.ps1 -GameDir "D:\SteamLibrary\steamapps\common\Remnant2"
@@ -56,16 +57,22 @@ Copy-Item $mod.FullName (Join-Path $target 'dlls\main.dll') -Force
 Copy-Item $panel.FullName (Join-Path $target 'dlls\Remnant2Overlay.InGame.dll') -Force
 Set-Content -Path (Join-Path $target 'enabled.txt') -Value '' -NoNewline
 
-# UE4SS 3.0.x also reads mods.txt; the entry has to sit above the built-in Keybinds line.
+# The HUD list: a Lua mod that shows the panel's list as a widget in the game's own HUD.
+$hud = Join-Path $mods 'Remnant2OverlayHUD'
+New-Item -ItemType Directory -Force -Path (Join-Path $hud 'Scripts') | Out-Null
+Copy-Item (Join-Path $PSScriptRoot 'Remnant2Overlay.HUD\Scripts\main.lua') (Join-Path $hud 'Scripts\main.lua') -Force
+Set-Content -Path (Join-Path $hud 'enabled.txt') -Value '' -NoNewline
+
+# UE4SS 3.0.x also reads mods.txt; the entries have to sit above the built-in Keybinds line.
 $modsTxt = Join-Path $mods 'mods.txt'
 if (Test-Path $modsTxt) {
     $lines = [System.Collections.Generic.List[string]](Get-Content $modsTxt)
-    $existing = $lines.FindIndex({ param($l) $l -match '^\s*Remnant2Overlay\s*:' })
-    if ($existing -ge 0) { $lines[$existing] = 'Remnant2Overlay : 1' }
-    else {
-        $at = $lines.FindIndex({ param($l) $l -match '^\s*;\s*Built-in keybinds' })
-        if ($at -lt 0) { $at = $lines.FindIndex({ param($l) $l -match '^\s*Keybinds\s*:' }) }
-        if ($at -lt 0) { $lines.Add('Remnant2Overlay : 1') } else { $lines.Insert($at, 'Remnant2Overlay : 1') }
+    foreach ($name in 'Remnant2Overlay', 'Remnant2OverlayHUD') {
+        $existing = $lines.FindIndex([Predicate[string]] { param($l) $l -match "^\s*$name\s*:" })
+        if ($existing -ge 0) { $lines[$existing] = "$name : 1"; continue }
+        $at = $lines.FindIndex([Predicate[string]] { param($l) $l -match '^\s*;\s*Built-in keybinds' })
+        if ($at -lt 0) { $at = $lines.FindIndex([Predicate[string]] { param($l) $l -match '^\s*Keybinds\s*:' }) }
+        if ($at -lt 0) { $lines.Add("$name : 1") } else { $lines.Insert($at, "$name : 1") }
     }
     Set-Content -Path $modsTxt -Value $lines
 }
@@ -73,4 +80,5 @@ if (Test-Path $modsTxt) {
 Write-Host "Installed to $target"
 Write-Host "  mod:   $($mod.FullName)"
 Write-Host "  panel: $($panel.FullName)"
+Write-Host "  HUD list: $hud"
 Write-Host 'Start Remnant 2 (keep the overlay app running so the panel has data) and press Home.'

@@ -4,16 +4,17 @@ Shows the overlay inside Remnant 2: press **Home** in game to open a panel with 
 quest status, and each item's requirements and how to get it. While the panel is open, the mouse and keyboard go
 to the panel and not the game.
 
-Tick **Keep on screen** in the panel to leave a small read-only overlay up after Home closes the panel: the panel's
-current filter as a short list, plus the selected item. It lets every click and key through to the game. Drag it
-into place while the panel is open; the setting and position are remembered.
+Tick **Keep on screen** in the panel to show its current list (the filter and the selected item) on the right side
+of the screen as part of the game's own HUD. It's a real game widget (UMG) built at runtime by a small Lua mod, so it
+uses the game's font and lets every click and key through. The setting is remembered.
 
 | Path | What it is |
 | --- | --- |
 | `Remnant2Overlay.UE4SS` | The UE4SS C++ mod (CMake for UE4SS 3.0.x, xmake for newer). UE4SS loads it at game start, and it loads the panel. Live game data will be read here next. |
 | `Remnant2Overlay.InGame` | The panel (CMake): a DLL that hooks the game's DirectX 12 swap chain and draws with ImGui. |
+| `Remnant2Overlay.HUD` | The HUD list: a UE4SS Lua mod that builds a UMG widget from `%LOCALAPPDATA%\Remnant2Overlay\hud.txt`, which the panel writes. |
 | `build-mod.ps1`, `build-panel.ps1` | Build each one with Visual Studio's own tools, from any PowerShell window. |
-| `install-mod.ps1` | Copies both into the game's UE4SS `Mods` folder and enables the mod. |
+| `install-mod.ps1` | Copies all three into the game's UE4SS `Mods` folder and enables both mods. |
 
 The panel shows what the overlay app last wrote to `%LOCALAPPDATA%\Remnant2Overlay\ingame-state.json`. The app
 rewrites that file whenever the save changes, so **keep the overlay app running** (it can be hidden with
@@ -78,6 +79,8 @@ Run the scripts from the repo folder in any PowerShell window. If PowerShell ref
 
 - **Nothing shows up:** look in `ue4ss\UE4SS.log` for `[Remnant2Overlay]` lines, then at
   `%LOCALAPPDATA%\Remnant2Overlay\ingame.log` (written by the panel).
+- **HUD list doesn't show:** look for `[Remnant2OverlayHUD]` lines in `ue4ss\UE4SS.log`. It needs Lua mods
+  enabled in UE4SS and **Keep on screen** ticked in the panel, and appears once you're in game (not the title screen).
 - **"No item list yet":** start the overlay app once; it writes the list the panel shows.
 - **DirectX 11:** the panel needs DirectX 12 (the game's default). Remove `-dx11` from the launch options.
 - **New build of the panel:** restart the game. A panel already loaded in the game stays loaded.

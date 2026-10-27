@@ -18,7 +18,7 @@ namespace r2o::ui
         constexpr ULONGLONG HintMilliseconds = 8000;
 
         std::atomic<bool> g_visible{false}; // the full panel is open and takes the mouse and keyboard
-        bool g_pinned = false;              // keep a read-only overlay on screen while the panel is closed
+        bool g_pinned = false;              // show the list in the game's HUD (see WriteHud)
         ULONGLONG g_hintUntil = 0;
         constexpr int PinnedRows = 15;
 
@@ -188,9 +188,9 @@ namespace r2o::ui
             ImGui::SameLine();
             if (bool pinned = g_pinned; ImGui::Checkbox("Keep on screen", &pinned)) SetPinned(pinned);
             if (ImGui::IsItemHovered())
-                ImGui::SetTooltip("After Home closes the panel, keep a small overlay of this list on screen.\n"
-                                  "It ignores the mouse and keyboard, so you can keep playing.\n"
-                                  "Drag it where you want it while the panel is open.");
+                ImGui::SetTooltip("Show this list on the right side of the game's HUD, open or closed.\n"
+                                  "It follows the filters and selection set here.\n"
+                                  "Needs the Remnant2OverlayHUD mod (install-mod.ps1 installs it).");
 
             const Item* selected = nullptr;
             const float listWidth = ImGui::GetContentRegionAvail().x * 0.5f;
@@ -241,66 +241,80 @@ namespace r2o::ui
             ImGui::End();
         }
 
-        // The read-only overlay: the panel's current filter as a short list, plus the selected item's status.
-        // While the panel is open it can be dragged and resized; otherwise it lets every click through to the game.
-        void DrawPinned(bool interactive)
+        // The game's HUD (the Remnant2OverlayHUD Lua mod) draws the on-screen list from hud.txt. First line "show" or
+        // "hide", then one "RRGGBB<tab>text" line per row. ASCII only, so it goes through Lua and FText unchanged.
+        std::string Ascii(const std::string& text)
         {
-            const auto* viewport = ImGui::GetMainViewport();
-            ImGui::SetNextWindowPos({viewport->WorkPos.x + viewport->WorkSize.x - 380, viewport->WorkPos.y + 60},
-                                    ImGuiCond_FirstUseEver);
-            ImGui::SetNextWindowSize({340, 0}, ImGuiCond_FirstUseEver);
-            ImGui::SetNextWindowBgAlpha(interactive ? 0.9f : 0.6f);
-            ImGuiWindowFlags flags = ImGuiWindowFlags_NoCollapse | ImGuiWindowFlags_NoFocusOnAppearing;
-            if (!interactive) flags |= ImGuiWindowFlags_NoInputs | ImGuiWindowFlags_NoTitleBar;
-            if (!ImGui::Begin("Remnant 2 Overlay (on screen)", nullptr, flags))
-            {
-                ImGui::End();
-                return;
-            }
+            std::string out;
+            for (unsigned char c : text)
+                if (c == '\t' || c == '\n' || c == '\r') out += ' ';
+                else if (c < 0x80) out += char(c);
+                else if ((c & 0xC0) == 0xC0) out += '?'; // first byte of a multi-byte character
+            return out;
+        }
 
+        std::string HexColor(const ImVec4& c)
+        {
+            char buffer[8];
+            snprintf(buffer, sizeof buffer, "%02X%02X%02X", int(c.x * 255 + 0.5f), int(c.y * 255 + 0.5f), int(c.z * 255 + 0.5f));
+            return buffer;
+        }
+
+        std::string BuildHud()
+        {
+            std::string hud = g_pinned ? "show\n" : "hide\n";
+            auto row = [&](const ImVec4& color, const std::string& text) { hud += HexColor(color) + "\t" + Ascii(text) + "\n"; };
             if (g_state.Items.empty())
             {
-                Wrapped(Muted, g_error.empty() ? "No items yet." : g_error);
-                ImGui::End();
-                return;
+                row(Muted, "Remnant 2 Overlay: start the overlay app");
+                return hud;
             }
 
-            ImGui::TextColored(Accent, "%s", ShowOptions[g_show]);
-            if (g_category > 0)
-            {
-                ImGui::SameLine();
-                ImGui::TextColored(Muted, "· %s", g_categories[g_category].c_str());
-            }
-            Wrapped(g_state.NothingLeft ? MissingColor : AvailableColor, g_state.Summary);
+            std::string title = ShowOptions[g_show];
+            if (g_category > 0) title += " - " + g_categories[g_category];
+            row(Accent, title);
+            if (!g_state.Summary.empty()) row(g_state.NothingLeft ? MissingColor : Muted, g_state.Summary);
 
-            int shown = 0, matching = 0;
+            int matching = 0;
             for (const auto& item : g_state.Items)
             {
                 if (!Matches(item)) continue;
-                if (++matching > PinnedRows) continue;
-                shown++;
-                ImGui::TextColored(StatusColor(item.Status), "●");
-                ImGui::SameLine();
-                ImGui::TextUnformatted(item.Name.c_str());
-                if (!item.World.empty())
-                {
-                    ImGui::SameLine();
-                    ImGui::TextColored(Muted, "%s", item.World.c_str());
-                }
+                if (++matching <= PinnedRows) row(StatusColor(item.Status), item.Name);
             }
-            if (matching > shown) ImGui::TextColored(Muted, "…and %d more", matching - shown);
-            if (matching == 0) ImGui::TextColored(Muted, "Nothing matches these filters.");
+            if (matching > PinnedRows) row(Muted, "+" + std::to_string(matching - PinnedRows) + " more");
+            if (matching == 0) row(Muted, "Nothing matches these filters");
 
             for (const auto& item : g_state.Items)
             {
                 if (item.Name != g_selected) continue;
-                ImGui::Separator();
-                Wrapped(Text, item.Name);
-                Wrapped(StatusColor(item.Status), item.Reason);
+                row(Accent, "> " + item.Name);
+                row(StatusColor(item.Status), item.Reason);
                 for (const auto& r : item.Requirements)
-                    if (r.Met == false) Wrapped(MissingColor, "✗ " + r.Label);
+                    if (r.Met == false) row(MissingColor, "Missing: " + r.Label);
             }
-            ImGui::End();
+            return hud;
+        }
+
+        // Rewrites hud.txt when the list changes (checked a few times a second; the write is atomic).
+        void WriteHud()
+        {
+            static ULONGLONG nextCheck = 0;
+            static std::string written;
+            const ULONGLONG now = GetTickCount64();
+            if (now < nextCheck) return;
+            nextCheck = now + 250;
+
+            std::string hud = BuildHud();
+            if (hud == written) return;
+            const auto path = DataDir() / L"hud.txt";
+            auto temp = path;
+            temp += L".tmp";
+            {
+                std::ofstream out(temp, std::ios::binary | std::ios::trunc);
+                out << hud;
+                if (!out) return;
+            }
+            if (MoveFileExW(temp.c_str(), path.c_str(), MOVEFILE_REPLACE_EXISTING)) written = std::move(hud);
         }
 
         void DrawHint()
@@ -325,7 +339,13 @@ namespace r2o::ui
         g_hintUntil = 0;
     }
 
-    bool IsIdle() { return !g_visible && !g_pinned && GetTickCount64() > g_hintUntil; }
+    bool IsIdle() { return !g_visible && GetTickCount64() > g_hintUntil; }
+
+    void Tick()
+    {
+        if (RefreshState(g_state, g_error)) OnStateLoaded();
+        WriteHud();
+    }
 
     void Setup()
     {
@@ -386,12 +406,9 @@ namespace r2o::ui
 
     void Draw()
     {
-        if (RefreshState(g_state, g_error)) OnStateLoaded();
-
         // The game hides the OS cursor, so ImGui draws its own while the panel is open.
         ImGui::GetIO().MouseDrawCursor = g_visible;
         if (g_visible) DrawPanel();
-        if (g_pinned) DrawPinned(g_visible);
-        if (!g_visible && GetTickCount64() < g_hintUntil) DrawHint();
+        else if (GetTickCount64() < g_hintUntil) DrawHint();
     }
 }

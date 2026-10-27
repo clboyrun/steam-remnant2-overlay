@@ -242,6 +242,7 @@ namespace r2o::hooks
                 DestroyRenderer();
                 return;
             }
+            ui::Tick();
             if (ui::IsIdle()) return; // nothing on screen: cost the game nothing
 
             ImGui_ImplDX12_NewFrame();
