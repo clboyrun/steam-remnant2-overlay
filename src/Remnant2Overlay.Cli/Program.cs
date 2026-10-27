@@ -10,12 +10,16 @@ if (path is null || !File.Exists(path))
 }
 
 var characters = ProfileReader.ReadFile(path);
+var db = ItemDatabase.LoadEmbedded();
 Console.WriteLine($"{path}: {characters.Count} character(s)");
 
 foreach (var character in characters)
 {
     Console.WriteLine();
     Console.WriteLine($"== Character {character.Index + 1} ({character.Items.Count} items) ==");
+    foreach (var group in db.Compare(character).GroupBy(e => e.Item.Category).OrderBy(g => g.Key))
+        Console.WriteLine($"{group.Key}: {group.Count(e => e.Owned)} / {group.Count()} owned");
+    Console.WriteLine();
     foreach (var group in character.Items.GroupBy(i => i.Category).OrderBy(g => g.Key))
     {
         Console.WriteLine($"{group.Key} ({group.Count()}):");

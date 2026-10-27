@@ -110,3 +110,32 @@ public class SaveReaderTests
         return output.ToArray();
     }
 }
+
+public class ItemDatabaseTests
+{
+    [Fact]
+    public void LoadEmbedded_CategorizesEveryItem()
+    {
+        var db = ItemDatabase.LoadEmbedded();
+
+        Assert.True(db.Items.Count > 600);
+        foreach (var category in Enum.GetValues<ItemCategory>().Except([ItemCategory.RelicFragment]))
+            Assert.Contains(db.Items, i => i.Category == category);
+        Assert.Equal("Akari War Band", db.Find("Ring_AkariWarBand")?.DisplayName);
+        Assert.Equal("Bruiser Bodyplate", db.Find("Armor_Body_Challenger")?.DisplayName);
+    }
+
+    [Fact]
+    public void Compare_MarksOwnedItems()
+    {
+        var db = ItemDatabase.LoadEmbedded();
+        var character = new CharacterInventory(0,
+            [new OwnedItem("Ring_AkariWarBand", "", ItemCategory.Ring)]);
+
+        var entries = db.Compare(character);
+
+        Assert.Equal(db.Items.Count, entries.Count);
+        Assert.Single(entries, e => e.Owned);
+        Assert.True(entries.Single(e => e.Item.AssetName == "Ring_AkariWarBand").Owned);
+    }
+}
