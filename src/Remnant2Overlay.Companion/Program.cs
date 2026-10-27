@@ -14,5 +14,6 @@ builder.Services.AddSingleton(_ => ItemDatabase.LoadEmbedded());
 builder.Services.AddSingleton<LocalCache>();
 builder.Services.AddSingleton<GoogleAuth>();
 builder.Services.AddSingleton<SyncService>();
+builder.Services.AddSingleton<ProfileStore>();
 
 await builder.Build().RunAsync();

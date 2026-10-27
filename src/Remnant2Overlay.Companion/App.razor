@@ -2,10 +2,12 @@
 @inject GoogleAuth Auth
 @inject SyncService Sync
 @inject ItemDatabase Db
+@inject ProfileStore Profiles
+@inject LocalCache Cache
 
 <header class="bar">
     <h1>Remnant 2 Companion</h1>
-    @if (Auth.ClientId is not null)
+    @if (_mode == OverlayMode && Auth.ClientId is not null)
     {
         <button class="primary" disabled="@(Sync.Syncing || _busy)" @onclick="SyncTapped">
             @(Sync.Syncing ? "Syncing…" : Auth.HasToken ? "Sync" : "Sign in")
@@ -14,94 +16,126 @@
 </header>
 
 <main>
-    @if (Auth.ClientId is null)
+    <nav class="tabs mode">
+        <button class="@(_mode == OverlayMode ? "on" : "")" @onclick="() => SetModeAsync(OverlayMode)">PC with overlay</button>
+        <button class="@(_mode == DeviceMode ? "on" : "")" @onclick="() => SetModeAsync(DeviceMode)">Console / no overlay</button>
+    </nav>
+
+    @if (_mode is null)
     {
         <section class="card">
-            <h2>Set up Google sign-in</h2>
-            <p>This copy of the app doesn't have a Google client ID built in. Paste the <b>Web application</b> client ID
-               from your Google Cloud project (the README's "Phone sync" section has the steps).</p>
-            <input class="wide" placeholder="1234…apps.googleusercontent.com" @bind="_clientIdInput" />
-            <button class="primary" disabled="@string.IsNullOrWhiteSpace(_clientIdInput)" @onclick="SaveClientId">Save</button>
+            <h2>How do you play?</h2>
+            <p><b>PC with overlay</b>: the overlay on your PC reads your save and sends items and the rolled run here
+               through Google Drive.</p>
+            <p><b>Console / no overlay</b>: keep your characters on this phone or browser and tick items off yourself.
+               No sign-in needed. Steam players can also import a profile.sav.</p>
         </section>
     }
-
-    @if (!string.IsNullOrEmpty(Sync.Status))
+    else if (_mode == DeviceMode)
     {
-        <p class="status">@Sync.Status</p>
-    }
-
-    @if (Sync.Doc.Save is not { } save)
-    {
-        @if (Auth.ClientId is not null)
+        <ProfileBar />
+        @if (Profiles.Active is { } profile)
         {
-            <section class="card">
-                <h2>Nothing synced yet</h2>
-                <p>Tap <b>Sign in</b> with the same Google account you use for <b>Phone sync</b> in the overlay on your PC.
-                   The overlay uploads your items and run every time the game saves.</p>
-            </section>
+            <ItemList Collection="DeviceCollection" Standalone="true" OnMark="MarkOnDeviceAsync"
+                      AdventureWorld="@profile.AdventureWorld" OnAdventureWorld="Profiles.SetAdventureWorldAsync" />
         }
     }
     else
     {
-        <section class="pickers">
-            <select @bind="CharacterIndex">
-                @foreach (var c in save.Characters)
-                {
-                    <option value="@c.Index">@(c.Index + 1): @c.Description</option>
-                }
-            </select>
-            @if (Character is { Runs.Count: > 0 } character)
-            {
-                <select @bind="RunSlot">
-                    @foreach (var r in character.Runs)
-                    {
-                        <option value="@r.Slot">@r.Slot@(r.Slot == character.ActiveSlot ? " (playing)" : ""): @string.Join(", ", r.Zones.Where(z => z.World != "Ward 13").Select(z => z.World))</option>
-                    }
-                </select>
-            }
-        </section>
-
-        <p class="muted small">From the overlay, save written @save.ReadAt.ToLocalTime().ToString("g")@(save.Status is { } s && s.StartsWith("Run info") ? $" · {s}" : "")</p>
-
-        @if (Run is { } run)
+        @if (Auth.ClientId is null)
         {
-            <div class="banner @(Left.Available + Left.Gated == 0 ? "done" : "")">
-                @if (Left.Available + Left.Gated == 0)
-                {
-                    <text>Nothing new to collect in this @run.Slot.ToLowerInvariant(). Time to reroll.</text>
-                }
-                else
-                {
-                    <text>@run.Slot (@run.Difficulty): <b>@Left.Available</b> available now, <b>@Left.Gated</b> need a quest or unlock first.</text>
-                }
-            </div>
+            <section class="card">
+                <h2>Set up Google sign-in</h2>
+                <p>This copy of the app doesn't have a Google client ID built in. Paste the <b>Web application</b> client ID
+                   from your Google Cloud project (the README's "Phone sync" section has the steps).</p>
+                <input class="wide" placeholder="1234…apps.googleusercontent.com" @bind="_clientIdInput" />
+                <button class="primary" disabled="@string.IsNullOrWhiteSpace(_clientIdInput)" @onclick="SaveClientId">Save</button>
+            </section>
         }
 
-        <nav class="tabs">
-            <button class="@(_tab == "map" ? "on" : "")" @onclick='() => _tab = "map"'>Run map</button>
-            <button class="@(_tab == "items" ? "on" : "")" @onclick='() => _tab = "items"'>Items</button>
-        </nav>
-
-        @if (_tab == "map")
+        @if (!string.IsNullOrEmpty(Sync.Status))
         {
-            <RunMap Collection="Current" OpenItem="OpenItem" />
+            <p class="status">@Sync.Status</p>
+        }
+
+        @if (Sync.Doc.Save is not { } save)
+        {
+            @if (Auth.ClientId is not null)
+            {
+                <section class="card">
+                    <h2>Nothing synced yet</h2>
+                    <p>Tap <b>Sign in</b> with the same Google account you use for <b>Phone sync</b> in the overlay on your PC.
+                       The overlay uploads your items and run every time the game saves.</p>
+                </section>
+            }
         }
         else
         {
-            <ItemList Collection="Current" Focus="@_focus" OnMark="MarkAsync"
-                      AdventureWorld="@Sync.Doc.AdventureWorld?.Value" OnAdventureWorld="Sync.SetAdventureWorldAsync" />
-        }
-    }
+            <section class="pickers">
+                <select @bind="CharacterIndex">
+                    @foreach (var c in save.Characters)
+                    {
+                        <option value="@c.Index">@(c.Index + 1): @c.Description</option>
+                    }
+                </select>
+                @if (Character is { Runs.Count: > 0 } character)
+                {
+                    <select @bind="RunSlot">
+                        @foreach (var r in character.Runs)
+                        {
+                            <option value="@r.Slot">@r.Slot@(r.Slot == character.ActiveSlot ? " (playing)" : ""): @string.Join(", ", r.Zones.Where(z => z.World != "Ward 13").Select(z => z.World))</option>
+                        }
+                    </select>
+                }
+            </section>
 
-    @if (Auth.Email is not null)
-    {
-        <footer class="muted small">
-            Signed in as @Auth.Email · <a href="" @onclick="SignOut" @onclick:preventDefault>Sign out</a>
-        </footer>
+            <p class="muted small">From the overlay, save written @save.ReadAt.ToLocalTime().ToString("g")@(save.Status is { } s && s.StartsWith("Run info") ? $" · {s}" : "")</p>
+
+            @if (Run is { } run)
+            {
+                <div class="banner @(Left.Available + Left.Gated == 0 ? "done" : "")">
+                    @if (Left.Available + Left.Gated == 0)
+                    {
+                        <text>Nothing new to collect in this @run.Slot.ToLowerInvariant(). Time to reroll.</text>
+                    }
+                    else
+                    {
+                        <text>@run.Slot (@run.Difficulty): <b>@Left.Available</b> available now, <b>@Left.Gated</b> need a quest or unlock first.</text>
+                    }
+                </div>
+            }
+
+            <nav class="tabs">
+                <button class="@(_tab == "map" ? "on" : "")" @onclick='() => _tab = "map"'>Run map</button>
+                <button class="@(_tab == "items" ? "on" : "")" @onclick='() => _tab = "items"'>Items</button>
+            </nav>
+
+            @if (_tab == "map")
+            {
+                <RunMap Collection="Current" OpenItem="OpenItem" />
+            }
+            else
+            {
+                <ItemList Collection="Current" Focus="@_focus" OnMark="MarkAsync"
+                          AdventureWorld="@Sync.Doc.AdventureWorld?.Value" OnAdventureWorld="Sync.SetAdventureWorldAsync" />
+            }
+        }
+
+        @if (Auth.Email is not null)
+        {
+            <footer class="muted small">
+                Signed in as @Auth.Email · <a href="" @onclick="SignOut" @onclick:preventDefault>Sign out</a>
+            </footer>
+        }
     }
 </main>
 
 @code {
+    private const string ModeKey = "r2c.mode", OverlayMode = "overlay", DeviceMode = "device";
+    private static readonly Dictionary<string, bool> NoMarks = [];
+
+    private string? _mode;
+    private Collection? _deviceCollection;
     private string _tab = "map";
     private string? _clientIdInput;
     private bool _busy;
@@ -113,11 +147,33 @@
     protected override async Task OnInitializedAsync()
     {
         Sync.Changed += OnSyncChanged;
+        Profiles.Changed += OnProfilesChanged;
         await Auth.LoadAsync();
         await Sync.LoadCachedAsync();
+        await Profiles.LoadAsync();
+        // Before the mode existed everyone used the overlay, so anyone with synced data stays on it.
+        _mode = await Cache.GetAsync(ModeKey) ?? (Sync.Doc.Save is not null || Auth.HasToken ? OverlayMode : null);
         // A token from earlier in the hour still works without a tap.
-        if (Auth.HasToken) await Sync.SyncAsync();
+        if (_mode == OverlayMode && Auth.HasToken) await Sync.SyncAsync();
     }
+
+    private async Task SetModeAsync(string mode)
+    {
+        bool first = _mode != OverlayMode && mode == OverlayMode;
+        _mode = mode;
+        await Cache.SetAsync(ModeKey, mode);
+        if (first && Auth.HasToken) await Sync.SyncAsync();
+    }
+
+    private void OnProfilesChanged()
+    {
+        _deviceCollection = null;
+        InvokeAsync(StateHasChanged);
+    }
+
+    private Collection DeviceCollection => _deviceCollection ??= new Collection(Db, Profiles.ActiveCharacter, null, NoMarks);
+
+    private Task MarkOnDeviceAsync((ItemInfo Item, bool? Owned) mark) => Profiles.SetOwnedAsync(mark.Item.AssetName, mark.Owned ?? false);
 
     private void OnSyncChanged()
     {
@@ -125,7 +181,11 @@
         InvokeAsync(StateHasChanged);
     }
 
-    public void Dispose() => Sync.Changed -= OnSyncChanged;
+    public void Dispose()
+    {
+        Sync.Changed -= OnSyncChanged;
+        Profiles.Changed -= OnProfilesChanged;
+    }
 
     private CharacterSnapshot? Character
     {

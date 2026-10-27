@@ -101,6 +101,22 @@ about an hour, after which the button says **Sign in** again; one tap renews it.
 
 To run it locally: `dotnet run --project src/Remnant2Overlay.Companion` and open http://localhost:5280.
 
+### Console players (no overlay)
+
+The companion also works on its own for players who can't run the overlay, such as on PlayStation or Xbox. Pick
+**Console / no overlay** at the top of the app. No sign-in is needed:
+
+- Add a character for each one you play and switch between them from the picker. **Characters** renames or deletes
+  the current one.
+- Tick items off with the ✓ button as you get them; tap an item's name for where it drops. The world picker narrows
+  the list to the adventure you rolled.
+- Characters are kept in that browser only. **Characters → Save backup** downloads them as a file, and **Import
+  file…** loads that file on another phone or browser (the newer copy of each character wins).
+- Steam players without the overlay can import `profile.sav` instead of ticking by hand; every character in the save
+  becomes a character in the app. Console save files aren't readable this way.
+
+Switching back to **PC with overlay** keeps the console characters; the two modes don't share data.
+
 ## Icon extraction notes
 
 ### Mappings file (needed for icons)
