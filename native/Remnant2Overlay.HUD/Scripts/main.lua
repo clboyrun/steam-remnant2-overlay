@@ -14,9 +14,7 @@ local Visibility = { Collapsed = 1, HitTestInvisible = 3 }
 local HAlignRight = 3
 local JustifyRight = 2
 
-local widget, list = nil, nil
-local rows = {}
-local lastText = nil
+local widget = nil
 local gameFont = nil
 local warned = {}
 local retryAt = 0 -- os.time() before which a failed widget isn't built again
@@ -61,6 +59,13 @@ local function LinearColor(hex)
     return { R = channel(1), G = channel(3), B = channel(5), A = 1.0 }
 end
 
+-- Writes a colour into a struct field in place. UE4SS 3.0.1 can't take nested Lua tables as struct values (it reads
+-- the outer table for every inner field, so colours come out transparent and anchors zero), so every struct here is
+-- set field by field, before the widget is built, and the whole widget is rebuilt when the list changes.
+local function SetColor(target, color)
+    target.R, target.G, target.B, target.A = color.R, color.G, color.B, color.A
+end
+
 -- Borrow the font of one of the game's own text widgets so the list looks like part of the HUD.
 local function FindGameFont()
     local found = nil
@@ -78,9 +83,9 @@ local function FindGameFont()
     return found
 end
 
-local function NewRow()
-    local text = StaticConstructObject(StaticFindObject("/Script/UMG.TextBlock"), widget.WidgetTree)
-    -- Set before the row is added, so the first build already uses them.
+local function AddRow(tree, list, row)
+    local text = StaticConstructObject(StaticFindObject("/Script/UMG.TextBlock"), tree)
+    text:SetText(FText(row.text))
     Try("Styling a row", function()
         if gameFont then
             text.Font.FontObject = gameFont.object
@@ -88,76 +93,90 @@ local function NewRow()
         end
         text.Font.Size = FontSize
         text.Justification = JustifyRight
-        text.ShadowOffset = { X = 1.5, Y = 1.5 }
-        text.ShadowColorAndOpacity = { R = 0, G = 0, B = 0, A = 0.85 }
+        text.ColorAndOpacity.ColorUseRule = 0 -- UseColor_Specified
+        SetColor(text.ColorAndOpacity.SpecifiedColor, LinearColor(row.hex))
+        text.ShadowOffset.X, text.ShadowOffset.Y = 1.5, 1.5
+        SetColor(text.ShadowColorAndOpacity, { R = 0, G = 0, B = 0, A = 0.85 })
     end)
     local slot = list:AddChildToVerticalBox(text)
-    Try("Aligning a row", function() slot:SetHorizontalAlignment(HAlignRight) end)
-    rows[#rows + 1] = text
+    Try("Aligning a row", function() slot.HorizontalAlignment = HAlignRight end)
     return text
 end
 
-local function CreateWidget()
+local built = 0
+
+-- Builds a fresh widget with every row already styled, then adds it to the HUD. Returns false when there's no
+-- player yet (title screen, loading).
+local function Build(rows)
     local engine = FindFirstOf("Engine")
     if not Valid(engine) or not Valid(engine.GameViewport) then return false end
     local gameInstance = engine.GameViewport.GameInstance
     if not Valid(gameInstance) or not Valid(FindFirstOf("PlayerController")) then return false end
-
     gameFont = gameFont or FindGameFont()
-    rows = {}
 
-    widget = StaticConstructObject(StaticFindObject("/Script/UMG.UserWidget"), gameInstance, FName("Remnant2OverlayHUD"))
-    if not Valid(widget) then return false end
-    local tree = StaticConstructObject(StaticFindObject("/Script/UMG.WidgetTree"), widget, FName("WidgetTree"))
-    widget.WidgetTree = tree
-
-    local canvas = StaticConstructObject(StaticFindObject("/Script/UMG.CanvasPanel"), tree, FName("Canvas"))
+    local root = StaticConstructObject(StaticFindObject("/Script/UMG.UserWidget"), gameInstance)
+    if not Valid(root) then return false end
+    local tree = StaticConstructObject(StaticFindObject("/Script/UMG.WidgetTree"), root, FName("WidgetTree"))
+    root.WidgetTree = tree
+    local canvas = StaticConstructObject(StaticFindObject("/Script/UMG.CanvasPanel"), tree)
     tree.RootWidget = canvas
-    list = StaticConstructObject(StaticFindObject("/Script/UMG.VerticalBox"), tree, FName("List"))
+    local list = StaticConstructObject(StaticFindObject("/Script/UMG.VerticalBox"), tree)
 
     -- Right edge, a fifth of the way down, growing downwards and leftwards with the text.
     local slot = canvas:AddChildToCanvas(list)
-    slot:SetAnchors({ Minimum = { X = 1.0, Y = 0.22 }, Maximum = { X = 1.0, Y = 0.22 } })
-    slot:SetAlignment({ X = 1.0, Y = 0.0 })
-    slot:SetAutoSize(true)
-    slot:SetPosition({ X = -28.0, Y = 0.0 })
+    local layout = slot.LayoutData
+    layout.Anchors.Minimum.X, layout.Anchors.Minimum.Y = 1.0, 0.22
+    layout.Anchors.Maximum.X, layout.Anchors.Maximum.Y = 1.0, 0.22
+    layout.Alignment.X, layout.Alignment.Y = 1.0, 0.0
+    layout.Offsets.Left, layout.Offsets.Top = -28.0, 0.0
+    slot.bAutoSize = true
 
-    widget:SetVisibility(Visibility.Collapsed)
-    widget:AddToViewport(50)
-    lastText = nil -- fill it on this poll
-    Log("Added the list to the HUD" .. (gameFont and " (game font)." or " (default font)."))
+    local first = nil
+    for _, row in ipairs(rows) do first = first or AddRow(tree, list, row) end
+
+    -- HitTestInvisible: drawn, but every click goes to the game.
+    root:SetVisibility(Visibility.HitTestInvisible)
+    root:AddToViewport(50)
+    widget = root
+
+    built = built + 1
+    if built == 1 then
+        Log("Added the list to the HUD" .. (gameFont and " (game font)." or " (default font)."))
+        -- Read back what the game ended up with, for troubleshooting.
+        Try("Reading back the layout", function()
+            local a = slot.LayoutData.Anchors.Minimum
+            local c = first and first.ColorAndOpacity.SpecifiedColor
+            Log(string.format("Anchor %.2f,%.2f; %d rows; first row alpha %s; in viewport %s", a.X, a.Y, #rows,
+                c and string.format("%.2f", c.A) or "-", tostring(root:IsInViewport())))
+        end)
+    end
     return true
 end
 
-local function Update(text)
-    local visible, parsed = Parse(text)
-    for i, row in ipairs(parsed) do
-        local block = rows[i] or NewRow()
-        block:SetText(FText(row.text))
-        block:SetColorAndOpacity({ SpecifiedColor = LinearColor(row.hex), ColorUseRule = 0 })
-        block:SetVisibility(Visibility.HitTestInvisible)
-    end
-    for i = #parsed + 1, #rows do rows[i]:SetVisibility(Visibility.Collapsed) end
-    -- HitTestInvisible: drawn, but every click goes to the game.
-    widget:SetVisibility(visible and Visibility.HitTestInvisible or Visibility.Collapsed)
-end
+local lastText = nil
 
 local function Poll()
     local text = ReadHud()
     if not text then return end
-    -- Loading screens and level changes remove the widget; build it again when there's a player.
-    if not Valid(widget) or not widget:IsInViewport() then
-        if os.time() < retryAt then return end
-        widget = nil
-        if not Try("Creating the widget", CreateWidget) or not Valid(widget) or not widget:IsInViewport() then
-            -- No player yet (menus, loading) or something failed: don't build a new one every poll.
-            widget = nil
-            retryAt = os.time() + 5
-            return
-        end
+    local visible, rows = Parse(text)
+    local showing = Valid(widget) and widget:IsInViewport()
+    -- Nothing changed, unless a level change or loading screen took the widget away.
+    if text == lastText and (showing or not visible) then return end
+    if os.time() < retryAt then return end
+
+    if Valid(widget) then Try("Removing the old list", function() widget:RemoveFromParent() end) end
+    widget = nil
+    if not visible then
+        lastText = text
+        return
     end
-    if text == lastText then return end
-    if Try("Updating the list", function() Update(text) end) then lastText = text end
+    if Try("Building the list", function() Build(rows) end) and Valid(widget) and widget:IsInViewport() then
+        lastText = text
+    else
+        -- No player yet (menus, loading) or something failed: don't build a new one every poll.
+        widget = nil
+        retryAt = os.time() + 5
+    end
 end
 
 Log("Loaded. Waiting for " .. HudFile)
