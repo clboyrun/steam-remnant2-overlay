@@ -41,17 +41,15 @@ Ctrl+Shift+O) and the panel stays current. It picks up changes within about a se
    xmake
    ```
 
-3. Build the panel. Open the **x64 Native Tools Command Prompt** for your Visual Studio from the Start menu (not
-   the plain Developer prompt, which builds 32-bit). It works for VS 2022 and 2026, and Ninja comes with Visual Studio:
+3. Build the panel, from any PowerShell window. The script finds your Visual Studio (2022, 2026, ...) and uses its
+   own 64-bit compiler, CMake and Ninja:
 
-   ```bat
-   cd native\Remnant2Overlay.InGame
-   cmake -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
-   cmake --build build
+   ```powershell
+   powershell -ExecutionPolicy Bypass -File .\native\build-panel.ps1
    ```
 
-   If CMake complains about the generator or platform, an earlier run cached a different setup: delete the `build`
-   folder and run the commands again.
+   Add `-Clean` to start from scratch. It needs the "C++ CMake tools for Windows" component, which the Desktop
+   development with C++ workload includes by default.
 
 4. Install both into the game (finds the game through Steam; pass `-GameDir` if it doesn't):
 
