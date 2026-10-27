@@ -5,8 +5,8 @@
   </ItemGroup>
 
   <ItemGroup>
-    <PackageReference Include="CUE4Parse" Version="1.2.2.202609" PrivateAssets="compile" />
-    <PackageReference Include="CUE4Parse-Conversion" Version="1.2.2.202609" PrivateAssets="compile" />
+    <PackageReference Include="CUE4Parse" Version="$(CUE4ParseVersion)" />
+    <PackageReference Include="CUE4Parse-Conversion" Version="$(CUE4ParseVersion)" />
   </ItemGroup>
 
   <PropertyGroup>

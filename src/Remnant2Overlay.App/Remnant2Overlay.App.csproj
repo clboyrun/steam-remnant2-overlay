@@ -11,6 +11,14 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <!-- Referenced directly (not only through the library projects) so the DLLs are always copied next to the
+         app; some Visual Studio builds don't flow transitive package references, which fails at run time. -->
+    <PackageReference Include="CUE4Parse" Version="$(CUE4ParseVersion)" />
+    <PackageReference Include="CUE4Parse-Conversion" Version="$(CUE4ParseVersion)" />
+    <PackageReference Include="lib.remnant2.analyzer" Version="$(RemnantAnalyzerVersion)" />
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="..\Remnant2Overlay.SaveReader\Remnant2Overlay.SaveReader.csproj" />
     <ProjectReference Include="..\Remnant2Overlay.Icons\Remnant2Overlay.Icons.csproj" />
   </ItemGroup>

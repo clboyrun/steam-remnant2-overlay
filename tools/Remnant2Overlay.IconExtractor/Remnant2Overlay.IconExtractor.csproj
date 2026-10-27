@@ -8,6 +8,13 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <!-- Direct references so the DLLs are always copied next to the tool (see the overlay app's project). -->
+    <PackageReference Include="CUE4Parse" Version="$(CUE4ParseVersion)" />
+    <PackageReference Include="CUE4Parse-Conversion" Version="$(CUE4ParseVersion)" />
+    <PackageReference Include="lib.remnant2.analyzer" Version="$(RemnantAnalyzerVersion)" />
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="..\..\src\Remnant2Overlay.Icons\Remnant2Overlay.Icons.csproj" />
   </ItemGroup>
 

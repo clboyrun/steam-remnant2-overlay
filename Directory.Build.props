@@ -1,0 +1,7 @@
+<Project>
+  <PropertyGroup>
+    <!-- One place to bump shared packages; libraries and the apps that reference them directly must match. -->
+    <CUE4ParseVersion>1.2.2.202609</CUE4ParseVersion>
+    <RemnantAnalyzerVersion>2.0.4</RemnantAnalyzerVersion>
+  </PropertyGroup>
+</Project>
