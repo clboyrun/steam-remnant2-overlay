@@ -11,11 +11,16 @@ using Remnant2Overlay.SaveReader;
 
 namespace Remnant2Overlay.Icons;
 
+/// <param name="UnrealVersion">CUE4Parse EGame name such as GAME_UE5_2; null or unknown uses GAME_UE5_2.</param>
 public sealed record IconExtractorOptions(
     string PaksDir,
-    EGame Game = EGame.GAME_UE5_2,
+    string? UnrealVersion = null,
     string? UsmapPath = null,
-    string? AesKey = null);
+    string? AesKey = null)
+{
+    // Kept internal so callers don't need a CUE4Parse reference of their own.
+    internal EGame Game => Enum.TryParse<EGame>(UnrealVersion, ignoreCase: true, out var game) ? game : EGame.GAME_UE5_2;
+}
 
 /// <summary>Reads item icons out of the user's own Remnant 2 paks with CUE4Parse.</summary>
 public sealed class IconExtractor : IDisposable

@@ -3,7 +3,6 @@ using System.ComponentModel;
 using System.IO;
 using System.Runtime.CompilerServices;
 using System.Windows.Data;
-using CUE4Parse.UE4.Versions;
 using lib.remnant2.analyzer.Enums;
 using Remnant2Overlay.Icons;
 using Remnant2Overlay.SaveReader;
@@ -219,8 +218,7 @@ public sealed class MainViewModel : INotifyPropertyChanged
             return;
         }
 
-        var game = Enum.TryParse<EGame>(_settings.UnrealVersion, out var parsed) ? parsed : EGame.GAME_UE5_2;
-        var options = new IconExtractorOptions(paks, game, _settings.UsmapPath);
+        var options = new IconExtractorOptions(paks, _settings.UnrealVersion, _settings.UsmapPath);
         var tilesByAsset = Tiles.ToDictionary(t => t.Item.AssetName);
 
         // Created on the UI thread, so reports arrive on the UI thread.

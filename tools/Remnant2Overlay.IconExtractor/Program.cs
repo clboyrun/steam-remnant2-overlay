@@ -1,4 +1,3 @@
-using CUE4Parse.UE4.Versions;
 using Remnant2Overlay.Icons;
 using Remnant2Overlay.SaveReader;
 
@@ -11,8 +10,7 @@ using Remnant2Overlay.SaveReader;
 // --list   only prints every texture whose name contains "icon", which helps when matching fails.
 // --force  clears the cache first and extracts everything again.
 
-string? paks = null, outDir = null, usmap = null, aes = null;
-var game = EGame.GAME_UE5_2;
+string? paks = null, outDir = null, usmap = null, aes = null, game = null;
 bool list = false, force = false;
 
 for (int i = 0; i < args.Length; i++)
@@ -24,7 +22,7 @@ for (int i = 0; i < args.Length; i++)
         case "--out": outDir = Next(); break;
         case "--usmap": usmap = Next(); break;
         case "--aes": aes = Next(); break;
-        case "--game": game = Enum.Parse<EGame>(Next()); break;
+        case "--game": game = Next(); break;
         case "--list": list = true; break;
         case "--force": force = true; break;
         default:
