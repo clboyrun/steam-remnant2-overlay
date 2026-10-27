@@ -34,7 +34,7 @@ Run the game in **borderless windowed** mode so the overlay can sit on top of it
 
 - It finds `profile.sav` under `%USERPROFILE%\Saved Games\Remnant2\Steam` automatically, or use **Open save…**.
 - It reloads by itself whenever the game writes the save.
-- Owned items have a green border; missing items are dimmed with a red border. Hover a tile for where it drops.
+- Owned items have a green border; missing items are dimmed. Hover a tile for where it drops.
 - Filter by category, world, owned/missing, or search by name or drop source.
 - **Ctrl+Shift+O** hides and shows the overlay. Drag the title bar to move it; the opacity slider is top right.
 - **Run planning**: pick your campaign or adventure (it follows the one you're playing). Tiles are colored
@@ -80,6 +80,7 @@ Mutators use the internal name `MetaGem_*`.
 Rolled worlds, locations, loot sources, quest prerequisites and looted state come from
 [lib.remnant2.analyzer](https://github.com/AndrewSav/lib.remnant2.analyzer) (MIT), which reads both
 `profile.sav` and the `save_N.sav` world saves. If it can't read the saves (for example right after a game
-patch), the app falls back to the simple inventory reader above and shows owned/missing only. The item list comes from
-[lib.remnant2.analyzer](https://github.com/AndrewSav/lib.remnant2.analyzer) (MIT, see
+patch), the app falls back to the simple inventory reader above and shows owned/missing only.
+
+The item list also comes from [lib.remnant2.analyzer](https://github.com/AndrewSav/lib.remnant2.analyzer) (MIT, see
 `THIRD_PARTY_NOTICES.md`); rebuild it with `python tools/build_item_db.py path/to/db.json`.
