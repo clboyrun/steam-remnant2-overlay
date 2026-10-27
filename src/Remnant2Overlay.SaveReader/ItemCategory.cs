@@ -13,6 +13,7 @@ public enum ItemCategory
     Mutator,
     RelicFragment,
     Relic,
+    Trait,
 }
 
 public static class ItemCategories
@@ -31,6 +32,7 @@ public static class ItemCategories
         ("MetaGem_", ItemCategory.Mutator),
         ("RelicFragment_", ItemCategory.RelicFragment),
         ("Relic_Consumable_", ItemCategory.Relic),
+        ("Trait_", ItemCategory.Trait),
     ];
 
     public static ItemCategory? FromAssetName(string assetName)

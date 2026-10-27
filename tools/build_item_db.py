@@ -7,7 +7,7 @@ import json
 import os
 import sys
 
-TYPES = {"weapon", "armor", "ring", "amulet", "mutator", "mod", "relic"}
+TYPES = {"weapon", "armor", "ring", "amulet", "mutator", "mod", "relic", "trait"}
 FIELDS = ["Id", "Name", "Type", "Subtype", "World", "DropType", "DropReference", "Note",
           "Prerequisite", "Difficulty", "Hardcore", "Coop", "Material", "WeaponOrMod", "ProfileId"]
 

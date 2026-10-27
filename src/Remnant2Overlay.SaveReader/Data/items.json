@@ -5616,6 +5616,362 @@
   "ProfileId": "/Game/World_Jungle/Items/Trinkets/Rings/ZoheesRing/Ring_ZoheesRing.Ring_ZoheesRing_C"
  },
  {
+  "Id": "Trait_Affliction",
+  "Type": "trait",
+  "World": "World_DLC1",
+  "DropType": "Progression",
+  "Note": "Reach Ritualist level 10 to unlock this trait for use in any build",
+  "Prerequisite": "Engram_Ritualist",
+  "ProfileId": "/Game/World_DLC1/Items/Traits/Affliction/Trait_Affliction.Trait_Affliction_C"
+ },
+ {
+  "Id": "Trait_AmmoReserves",
+  "Type": "trait",
+  "World": "World_Base",
+  "DropType": "Progression",
+  "Note": "Reach Gunslinger level 10 to unlock this trait for use in any build",
+  "Prerequisite": "Engram_Gunslinger",
+  "ProfileId": "/Game/World_Base/Items/Traits/Archetype/AmmoReserves/Trait_AmmoReserves.Trait_AmmoReserves_C"
+ },
+ {
+  "Id": "Trait_Amplitude",
+  "Type": "trait",
+  "World": "World_Base",
+  "DropType": "Location",
+  "DropReference": "The Labyrinth",
+  "Note": "Found in The Labyrinth location, obtained by finishing the fight next to the Colosseum of Ruin world stone that unlocks the Master Portal Key to progress through the main campaign",
+  "ProfileId": "/Game/World_Base/Items/Traits/Archetype/Amplitude/Trait_Amplitude.Trait_Amplitude_C"
+ },
+ {
+  "Id": "Trait_ArcaneStrike",
+  "Type": "trait",
+  "World": "World_Base",
+  "DropType": "Event",
+  "DropReference": "Quest_SideD_CharnelHouse",
+  "Note": "Destroy all bone piles in the Harvester's Reach location on Losomn that spawn the large rat",
+  "ProfileId": "/Game/World_Base/Items/Traits/Core/ArcaneStrike/Trait_ArcaneStrike.Trait_ArcaneStrike_C"
+ },
+ {
+  "Id": "Trait_Barkskin",
+  "Type": "trait",
+  "World": "World_Base",
+  "DropType": "Event",
+  "DropReference": "Quest_OverworldPOI_Meidra",
+  "Note": "Choose selfless \"helping others\" options during dialog with Meidra",
+  "ProfileId": "/Game/World_Base/Items/Traits/Core/Barkskin/Trait_Barkskin.Trait_Barkskin_C"
+ },
+ {
+  "Id": "Trait_Barrier",
+  "Type": "trait",
+  "World": "World_DLC3",
+  "DropType": "Progression",
+  "Note": "Reach Warden level 10 to unlock this trait for use in any build",
+  "Prerequisite": "Engram_Warden",
+  "ProfileId": "/Game/World_DLC3/Items/Archetypes/Warden/Traits/Trait_Barrier.Trait_Barrier_C"
+ },
+ {
+  "Id": "Trait_BloodBond",
+  "Type": "trait",
+  "World": "World_Base",
+  "DropType": "Event",
+  "DropReference": "Quest_OverworldPOI_Flautist",
+  "Note": "Defeat the Root Nexus",
+  "ProfileId": "/Game/World_Base/Items/Traits/Core/BloodBond/Trait_BloodBond.Trait_BloodBond_C"
+ },
+ {
+  "Id": "Trait_Bloodstream",
+  "Type": "trait",
+  "World": "World_Base",
+  "DropType": "Event",
+  "DropReference": "Quest_OverworldPOI_Meidra",
+  "Note": "Choose selfish \"helping myself\" options during dialog with Meidra",
+  "ProfileId": "/Game/World_Base/Items/Traits/Core/Bloodstream/Trait_Bloodstream.Trait_Bloodstream_C"
+ },
+ {
+  "Id": "Trait_Chakra",
+  "Type": "trait",
+  "World": "World_Base",
+  "DropType": "Event",
+  "DropReference": "Quest_RootEarth_Zone2",
+  "Note": "Found in the Corrupted Harbor location on Root Earth. Complete the boiler room fight event after the first checkpoint",
+  "ProfileId": "/Game/World_Base/Items/Traits/Core/Chakra/Trait_Chakra.Trait_Chakra_C"
+ },
+ {
+  "Id": "Trait_DarkPact",
+  "Type": "trait",
+  "World": "World_DLC1",
+  "DropType": "Location",
+  "DropReference": "Forlorn Coast",
+  "Note": "Found in the Forlorn Coast location on Losomn. You need to shoot three bells after which the trait is awarded. The first bell is near the Drowned Wen worldstone. The second bell is in the courtyard right before the Palace of the One True King, where there is a big guy with an Axe along with a lot of hogs. To find the third bell, in the Palace of the One True King, you need to go upstairs then drop from a balcony and then go downstairs. Once you transition outside hug the right wall till you see the bell",
+  "ProfileId": "/Game/World_DLC1/Items/Traits/DarkPact/Trait_DarkPact.Trait_DarkPact_C"
+ },
+ {
+  "Id": "Trait_Endurance",
+  "Type": "trait",
+  "World": "World_Base",
+  "DropType": "Start",
+  "ProfileId": "/Game/World_Base/Items/Traits/Core/Endurance/Trait_Endurance.Trait_Endurance_C"
+ },
+ {
+  "Id": "Trait_Expertise",
+  "Type": "trait",
+  "World": "World_Base",
+  "DropType": "Start",
+  "ProfileId": "/Game/World_Base/Items/Traits/Core/Expertise/Trait_Expertise.Trait_Expertise_C"
+ },
+ {
+  "Id": "Trait_Fitness",
+  "Type": "trait",
+  "World": "World_Base",
+  "DropType": "Event",
+  "DropReference": "Quest_SideD_StasisSiege",
+  "Note": "Found in the Vault of the Formless location on N'Erud. Complete the dungeon to earn the trait, granted after the final fight",
+  "ProfileId": "/Game/World_Base/Items/Traits/Core/Fitness/Trait_Fitness.Trait_Fitness_C"
+ },
+ {
+  "Id": "Trait_FlashCaster",
+  "Type": "trait",
+  "World": "World_Base",
+  "DropType": "Progression",
+  "Note": "Reach Archon level 10 to unlock this trait for use in any build",
+  "Prerequisite": "Engram_Archon",
+  "ProfileId": "/Game/World_Base/Items/Traits/Archetype/FlashCaster/Trait_FlashCaster.Trait_FlashCaster_C"
+ },
+ {
+  "Id": "Trait_Footwork",
+  "Type": "trait",
+  "World": "World_Base",
+  "DropType": "Event",
+  "DropReference": "Quest_SideD_Train",
+  "Note": "Complete the train event in the Terminus Station location on N'Erud",
+  "ProfileId": "/Game/World_Base/Items/Traits/Core/Footwork/Trait_Footwork.Trait_Footwork_C"
+ },
+ {
+  "Id": "Trait_Fortify",
+  "Type": "trait",
+  "World": "World_Base",
+  "DropType": "Progression",
+  "Note": "Reach Engineer level 10 to unlock this trait for use in any build",
+  "Prerequisite": "Engram_Engineer",
+  "ProfileId": "/Game/World_Base/Items/Traits/Archetype/Fortify/Trait_Fortify.Trait_Fortify_C"
+ },
+ {
+  "Id": "Trait_Gifted",
+  "Type": "trait",
+  "World": "World_DLC2",
+  "DropType": "Progression",
+  "Note": "Reach Invoker level 10 to unlock this trait for use in any build",
+  "Prerequisite": "Engram_Invoker",
+  "ProfileId": "/Game/World_DLC2/Items/Archetypes/Invoker/PerksAndTraits/Trait_Gifted.Trait_Gifted_C"
+ },
+ {
+  "Id": "Trait_Glutton",
+  "Type": "trait",
+  "World": "World_Base",
+  "DropType": "Event",
+  "DropReference": "Quest_SideD_Ravenous",
+  "Note": "Attempt to revive a fallen teammate during the Feast event in the Great Hall location. The teammate will die and you will get the trait. You need to find the Ravenous Medallion in the same area, open the door to the Feast hall with the medallion, and then eat any food on the table to start the event",
+  "Coop": true,
+  "ProfileId": "/Game/World_Base/Items/Traits/Core/Glutton/Trait_Glutton.Trait_Glutton_C"
+ },
+ {
+  "Id": "Trait_Handling",
+  "Type": "trait",
+  "World": "World_Base",
+  "DropType": "Event",
+  "DropReference": "Quest_RootEarth_Zone1",
+  "Note": "Found in the Ashen Wasteland location on Root Earth. Complete the carriages fight event after the first checkpoint",
+  "ProfileId": "/Game/World_Base/Items/Traits/Core/Handling/Trait_Handling.Trait_Handling_C"
+ },
+ {
+  "Id": "Trait_Insight",
+  "Type": "trait",
+  "World": "World_DLC3",
+  "DropType": "Event",
+  "DropReference": "Quest_Boss_AlepsisTaura",
+  "Note": "Obtained by defeating Alepsis-Taura boss in The Convergence location on N'Erud. You need to destroy one or no black diamonds before the fight to get this item",
+  "ProfileId": "/Game/World_DLC3/Items/Traits/Insight/Trait_Insight.Trait_Insight_C"
+ },
+ {
+  "Id": "Trait_Kinship",
+  "Type": "trait",
+  "World": "World_Base",
+  "DropType": "Progression",
+  "Note": "Reach Handler level 10 to unlock this trait for use in any build",
+  "Prerequisite": "Engram_Handler",
+  "ProfileId": "/Game/World_Base/Items/Traits/Archetype/Kinship/Trait_Kinship.Trait_Kinship_C"
+ },
+ {
+  "Id": "Trait_Leech",
+  "Type": "trait",
+  "World": "World_Base",
+  "DropType": "Event",
+  "DropReference": "Quest_SideD_Extermination",
+  "Note": "Found in the Dormant N'Erudian Facility location on N'Erud. This is a co-op trait. There will be an area with the railing, where a part of the railing will be missing. If you look down from the gap you will see the ledge you can drop on. Follow the path to the elevator and take the elevator. Soon you will reach a control room with the Biome-Control Glyph quest item inside. One player needs to activate the console at this room while the count down timer is still running, while the other players should stay outside of the control room. The players outside of the control room will die and receive the trait",
+  "Coop": true,
+  "ProfileId": "/Game/World_Base/Items/Traits/Core/Leech/Trait_Leech.Trait_Leech_C"
+ },
+ {
+  "Id": "Trait_Longshot",
+  "Type": "trait",
+  "World": "World_Base",
+  "DropType": "Progression",
+  "Note": "Reach Hunter level 10 to unlock this trait for use in any build",
+  "Prerequisite": "Engram_Hunter",
+  "ProfileId": "/Game/World_Base/Items/Traits/Archetype/Longshot/Trait_Longshot.Trait_Longshot_C"
+ },
+ {
+  "Id": "Trait_Perception",
+  "Type": "trait",
+  "World": "World_DLC3",
+  "DropType": "Event",
+  "DropReference": "Quest_SideD_GasChamber",
+  "Note": "Found in the Stagnant Manufactory location on N'Erud. Obtained by activating the console at the end of the dungeon",
+  "ProfileId": "/Game/World_DLC3/Items/Traits/Perception/Trait_Perception.Trait_Perception_C"
+ },
+ {
+  "Id": "Trait_Potency",
+  "Type": "trait",
+  "World": "World_Base",
+  "DropType": "Progression",
+  "Note": "Reach Alchemist level 10 to unlock this trait for use in any build",
+  "Prerequisite": "Engram_Alchemist",
+  "ProfileId": "/Game/World_Base/Items/Traits/Archetype/Potency/Trait_Potency.Trait_Potency_C"
+ },
+ {
+  "Id": "Trait_Preservation",
+  "Type": "trait",
+  "World": "World_DLC3",
+  "DropType": "Location",
+  "DropReference": "Agronomy Sector",
+  "Note": "Found in the Agronomy Sector and Withered Necropolis locations on N'Erud. Obtained by activating consoles next to all three of the purple pillars, two in the Agronomy Sector and another one in Withered Necropolis. You can get to the first pillar from the Anterior Recess world stone, head outside and follow the right path, continue until you reach a glider spot, hop onto the glider and drop straight down. For the first pillar start at the Propagation Field world stone, hang an immediate left and work your way through the corn field on your left, continue to the glider spot and you'll see the second pillar across the chasm. Take the glider to reach it. For the third pillar take the closest glider from the Waylaid Conservatory world stone, glide all the way down the canyon until you hit the first wind plume, turn right and hit the next wind plume just around the corner, and then the next one in the same direction. The small platform (with a sort of short broken bridge sticking out of it) will be immediately next to that last plume. Land on it, go under the arch and to the right until you reach the pillar",
+  "ProfileId": "/Game/World_DLC3/Items/Traits/Preservation/Trait_Preservation.Trait_Preservation_C"
+ },
+ {
+  "Id": "Trait_Recovery",
+  "Type": "trait",
+  "World": "World_Base",
+  "DropType": "Event",
+  "DropReference": "Quest_OverworldPOI_DranOracle",
+  "Note": "Found in an overworld location on Losomn. You need to find a Dran Child on the street, and follow them, until the prompt to interact with the child becomes active. Interact with them and they bow. Go to the Oracle's Refuge world stone and climb up the ladder next to it and then interact with the oracle",
+  "ProfileId": "/Game/World_Base/Items/Traits/Core/Recovery/Trait_Recovery.Trait_Recovery_C"
+ },
+ {
+  "Id": "Trait_Regrowth",
+  "Type": "trait",
+  "World": "World_Base",
+  "DropType": "Progression",
+  "Note": "Reach Summoner level 10 to unlock this trait for use in any build",
+  "Prerequisite": "Engram_Summoner",
+  "ProfileId": "/Game/World_Base/Items/Traits/Archetype/Regrowth/Trait_Regrowth.Trait_Regrowth_C"
+ },
+ {
+  "Id": "Trait_Resolute",
+  "Type": "trait",
+  "World": "World_DLC2",
+  "DropType": "Location",
+  "DropReference": "The Bloodless Throne",
+  "Note": "Get cursed by Lydusa when you reach the Bloodless Throne location on Yaesha. Die 15 times. Each time you die while cursed you turn into a statue. Destroy the statue 15 times to get the trait",
+  "Prerequisite": "D627C628-4F497780-F6BC269E-A815E1FC",
+  "ProfileId": "/Game/World_DLC2/Items/Traits/Resolute/Trait_Resolute.Trait_Resolute_C"
+ },
+ {
+  "Id": "Trait_Revivalist",
+  "Type": "trait",
+  "World": "World_Base",
+  "DropType": "Progression",
+  "Note": "Revive a teammate 15 times",
+  "Prerequisite": "BCD29B16-4AD4F664-467B11B8-40B71EC6",
+  "Coop": true,
+  "ProfileId": "/Game/World_Base/Items/Traits/Core/Revivalist/Trait_Revivalist.Trait_Revivalist_C"
+ },
+ {
+  "Id": "Trait_Rugged",
+  "Type": "trait",
+  "World": "World_Base",
+  "DropType": "Event",
+  "DropReference": "Quest_SideD_WailingField",
+  "Note": "Found in the Forgotten Field location on Yaesha. After defeating the Defiler aberration, given to the player by The Laemir",
+  "ProfileId": "/Game/World_Base/Items/Traits/Core/Rugged/Trait_Rugged.Trait_Rugged_C"
+ },
+ {
+  "Id": "Trait_Scholar",
+  "Type": "trait",
+  "World": "World_Base",
+  "DropType": "Event",
+  "DropReference": "Quest_RootEarth_TowerBoss",
+  "Note": "Defeat the final campaign boss Annihilation",
+  "ProfileId": "/Game/World_Base/Items/Traits/Core/Scholar/Trait_Scholar.Trait_Scholar_C"
+ },
+ {
+  "Id": "Trait_Shadeskin",
+  "Type": "trait",
+  "World": "World_Base",
+  "DropType": "Event",
+  "DropReference": "Quest_SideD_CrimsonHarvest",
+  "Note": "Found in the Butcher's Quarter location on Losomn, complete the burning event next to the checkpoint",
+  "ProfileId": "/Game/World_Base/Items/Traits/Core/Shadeskin/Trait_Shadeskin.Trait_Shadeskin_C"
+ },
+ {
+  "Id": "Trait_Siphoner",
+  "Type": "trait",
+  "World": "World_Base",
+  "DropType": "Event",
+  "DropReference": "Quest_SideD_Extermination",
+  "Note": "Found in the Dormant N'Erudian Facility location on N'Erud. Eliminate all enemies in the dungeon in less than 6 minutes",
+  "ProfileId": "/Game/World_Base/Items/Traits/Core/Siphoner/Trait_Siphoner.Trait_Siphoner_C"
+ },
+ {
+  "Id": "Trait_Spirit",
+  "Type": "trait",
+  "World": "World_Base",
+  "DropType": "Start",
+  "ProfileId": "/Game/World_Base/Items/Traits/Core/Spirit/Trait_Spirit.Trait_Spirit_C"
+ },
+ {
+  "Id": "Trait_StrongBack",
+  "Type": "trait",
+  "World": "World_Base",
+  "DropType": "Progression",
+  "Note": "Reach Challenger level 10 to unlock this trait for use in any build",
+  "Prerequisite": "Engram_Challenger",
+  "ProfileId": "/Game/World_Base/Items/Traits/Archetype/StrongBack/Trait_StrongBack.Trait_StrongBack_C"
+ },
+ {
+  "Id": "Trait_Swiftness",
+  "Type": "trait",
+  "World": "World_Base",
+  "DropType": "Progression",
+  "Note": "Reach Explorer level 10 to unlock this trait for use in any build",
+  "Prerequisite": "Engram_Explorer",
+  "ProfileId": "/Game/World_Base/Items/Traits/Archetype/Swiftness/Trait_Swiftness.Trait_Swiftness_C"
+ },
+ {
+  "Id": "Trait_Triage",
+  "Type": "trait",
+  "World": "World_Base",
+  "DropType": "Progression",
+  "Note": "Reach Medic level 10 to unlock this trait for use in any build",
+  "Prerequisite": "Engram_Medic",
+  "ProfileId": "/Game/World_Base/Items/Traits/Archetype/Triage/Trait_Triage.Trait_Triage_C"
+ },
+ {
+  "Id": "Trait_Untouchable",
+  "Type": "trait",
+  "World": "World_Base",
+  "DropType": "Progression",
+  "Note": "Reach Invader level 10 to unlock this trait for use in any build",
+  "Prerequisite": "Engram_Invader",
+  "ProfileId": "/Game/World_Base/Items/Traits/Archetype/Untouchable/Trait_Untouchable.Trait_Untouchable_C"
+ },
+ {
+  "Id": "Trait_Vigor",
+  "Type": "trait",
+  "World": "World_Base",
+  "DropType": "Start",
+  "ProfileId": "/Game/World_Base/Items/Traits/Core/Vigor/Trait_Vigor.Trait_Vigor_C"
+ },
+ {
   "Id": "Weapon_AbyssalHook",
   "Type": "weapon",
   "Subtype": "Melee Weapon",

@@ -1,7 +1,7 @@
 # Remnant 2 Overlay
 
 A Windows companion window for Remnant 2 (Steam) that reads your save, shows which weapons, armor,
-mutators, rings and amulets you own or are missing, and later suggests run paths for the missing ones.
+mutators, rings, amulets, relics and traits you own or are missing, and later suggests run paths for the missing ones.
 
 Steam's own overlay can't host third-party content, so this is a borderless, always-on-top window.
 Run the game in **borderless windowed** mode so the overlay can sit on top of it.

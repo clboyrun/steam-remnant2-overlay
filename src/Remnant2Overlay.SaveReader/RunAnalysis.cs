@@ -76,7 +76,7 @@ public sealed record ItemRunStatus(ItemInfo Item, RunItemStatus Status, string R
 public static class RunAnalysis
 {
     // Collectible types we track; anything else (traits, quest items, engrams…) is shown as context only.
-    private static readonly HashSet<string> TrackedTypes = ["weapon", "armor", "ring", "amulet", "mutator", "mod", "relic"];
+    private static readonly HashSet<string> TrackedTypes = ["weapon", "armor", "ring", "amulet", "mutator", "mod", "relic", "trait"];
 
     private static readonly Dictionary<string, string> WorldIdToName = new()
     {
