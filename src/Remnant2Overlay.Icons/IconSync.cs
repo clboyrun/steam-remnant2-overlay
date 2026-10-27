@@ -41,6 +41,11 @@ public static class IconSync
         using var extractor = new IconExtractor(options);
         int iconTextures = extractor.IconPackagePaths.Count();
         Stage($"Indexed {extractor.MountedFileCount:N0} game files, {iconTextures:N0} icon textures. Extracting…");
+        // A sample of what icon packages are called, to tune matching from the log alone.
+        var paths = extractor.IconPackagePaths.Order().ToList();
+        foreach (string path in paths.Where(p => p.Contains("/Items/", StringComparison.OrdinalIgnoreCase)).Take(40)
+                     .Concat(paths.Where(p => !p.Contains("/Items/", StringComparison.OrdinalIgnoreCase)).Take(40)))
+            log?.Invoke($"  sample {path}");
         try
         {
             foreach (var item in todo)

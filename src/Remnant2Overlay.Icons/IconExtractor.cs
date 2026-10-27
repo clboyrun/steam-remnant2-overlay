@@ -78,14 +78,25 @@ public sealed class IconExtractor : IDisposable
             .ThenByDescending(p => p.InFolder)
             .ThenBy(p => p.File.NameWithoutExtension.Length);
 
+        int tried = 0;
         foreach (var (file, gamePath, _, _) in candidates)
         {
+            tried++;
             try
             {
-                if (!_provider.TryLoadPackageObject<UTexture2D>($"{file.PathWithoutExtension}.{file.NameWithoutExtension}", out var texture))
+                // LoadPackageObject (not TryLoad…) so the reason for a failure ends up in the log.
+                var export = _provider.LoadPackageObject($"{file.PathWithoutExtension}.{file.NameWithoutExtension}");
+                if (export is not UTexture2D texture)
+                {
+                    log?.Invoke($"  skip {gamePath}: {export.ExportType}, not a texture");
                     continue;
+                }
                 var bitmap = texture.Decode(ETexturePlatform.DesktopMobile);
-                if (bitmap is null) continue;
+                if (bitmap is null)
+                {
+                    log?.Invoke($"  skip {gamePath}: texture could not be decoded");
+                    continue;
+                }
 
                 byte[] png = TextureEncoder.Encode(bitmap, ETextureFormat.Png, false, out _, 100);
                 Directory.CreateDirectory(Path.GetDirectoryName(outFile)!);
@@ -97,10 +108,11 @@ public sealed class IconExtractor : IDisposable
             }
             catch (Exception e)
             {
-                log?.Invoke($"{gamePath}: {e.Message}");
+                log?.Invoke($"  error {gamePath}: {e.GetType().Name}: {e.Message}");
             }
         }
 
+        if (tried == 0) log?.Invoke($"  no candidates (folder {folder}, name containing \"{stem}\")");
         return null;
     }
 
