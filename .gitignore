@@ -495,3 +495,4 @@ native/Binaries/
 native/Intermediates/
 native/vsxmake*/
 native/build-mod/
+native/build-mod-deps/

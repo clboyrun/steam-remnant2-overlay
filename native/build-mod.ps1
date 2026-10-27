@@ -64,8 +64,24 @@ else {
     $cargo = Join-Path $sysroot 'bin\cargo.exe'
     if (-not (Test-Path $rustc) -or -not (Test-Path $cargo)) { throw "Rust toolchain at $sysroot looks incomplete. Run: rustup default stable" }
 
+    # UE4SS 3.0.1 fetches two dependencies from their latest branch, which has since moved on: ImGuiColorTextEdit now
+    # needs a newer ImGui than the v1.89 UE4SS pins. Use the versions from 3.0.1's release (Feb 2024) instead.
+    $pinned = @(
+        @{ Name = 'IMGUITEXTEDIT'; Url = 'https://github.com/UE4SS-RE/ImGuiColorTextEdit.git'; Commit = 'af78219' },
+        @{ Name = 'ICONFONTCPPHEADERS'; Url = 'https://github.com/juliettef/IconFontCppHeaders.git'; Commit = '8886c5657bac22b8fee34354871e3ade2a596433' })
+    $pinArgs = @(foreach ($dep in $pinned) {
+        $dir = Join-Path $PSScriptRoot "build-mod-deps\$($dep.Name.ToLower())"
+        if (-not (Test-Path (Join-Path $dir '.git'))) {
+            git clone -q $dep.Url $dir
+            if ($LASTEXITCODE -ne 0) { throw "Couldn't download $($dep.Url)." }
+        }
+        git -C $dir -c advice.detachedHead=false checkout -q $dep.Commit
+        if ($LASTEXITCODE -ne 0) { throw "Couldn't check out $($dep.Commit) in $dir." }
+        "-DFETCHCONTENT_SOURCE_DIR_$($dep.Name)=$dir"
+    })
+
     & $tools.CMake -S $PSScriptRoot -B $build -G Ninja -DCMAKE_BUILD_TYPE=Game__Shipping__Win64 "-DCMAKE_MAKE_PROGRAM=$($tools.Ninja)" `
-        "-DRust_COMPILER=$rustc" "-DRust_CARGO=$cargo" "-DCMAKE_C_COMPILER=$($tools.Compiler)" "-DCMAKE_CXX_COMPILER=$($tools.Compiler)" -Wno-dev
+        "-DRust_COMPILER=$rustc" "-DRust_CARGO=$cargo" "-DCMAKE_C_COMPILER=$($tools.Compiler)" "-DCMAKE_CXX_COMPILER=$($tools.Compiler)" @pinArgs -Wno-dev
     if ($LASTEXITCODE -ne 0) { throw 'CMake configure failed (see above).' }
 
     # The same old Corrosion takes newer Rust's "/defaultlib:msvcrt" link flag for a library file, and Ninja then
