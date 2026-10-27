@@ -28,11 +28,34 @@ function Enter-VsBuildEnv([switch]$Vs2022Compiler) {
     }
     Write-Host "Using Visual Studio at $vs"
 
-    # Enter-VsDevShell (what Launch-VsDevShell.ps1 wraps) passes these straight to VsDevCmd.bat.
-    Import-Module (Join-Path $vs 'Common7\Tools\Microsoft.VisualStudio.DevShell.dll')
-    Enter-VsDevShell -VsInstallPath $vs -SkipAutomaticLocation -DevCmdArguments $devCmdArgs | Out-Null
+    if ($Vs2022Compiler) {
+        # Load vcvarsall for that exact toolset and copy its environment into this session. (VsDevCmd through
+        # Enter-VsDevShell kept the newest compiler first on PATH when a dev shell had already run in the window.)
+        $script = Join-Path ([IO.Path]::GetTempPath()) "r2o-vcvars-$PID.cmd"
+        $vcvars = Join-Path $vs 'VC\Auxiliary\Build\vcvarsall.bat'
+        Set-Content -Path $script -Encoding Ascii -Value @(
+            "@call `"$vcvars`" x64 -vcvars_ver=$($toolset.Version) >nul",
+            '@if errorlevel 1 exit /b 1',
+            '@set')
+        $environment = & cmd.exe /d /c $script
+        $failed = $LASTEXITCODE -ne 0
+        Remove-Item $script -ErrorAction SilentlyContinue
+        if ($failed) { throw "vcvarsall.bat couldn't set up the $($toolset.Version) compiler." }
+        foreach ($line in $environment) {
+            if ($line -match '^([^=]+)=(.*)$') { Set-Item -Path "env:$($Matches[1])" -Value $Matches[2] }
+        }
+        $cl = (Get-Command cl.exe -ErrorAction SilentlyContinue).Source
+        if ($cl -notlike "*\$($toolset.Version)\*") { throw "Expected the $($toolset.Version) compiler but cl.exe is $cl." }
+        Write-Host "Compiler: $cl"
+    }
+    else {
+        # Enter-VsDevShell (what Launch-VsDevShell.ps1 wraps) passes these straight to VsDevCmd.bat.
+        Import-Module (Join-Path $vs 'Common7\Tools\Microsoft.VisualStudio.DevShell.dll')
+        Enter-VsDevShell -VsInstallPath $vs -SkipAutomaticLocation -DevCmdArguments $devCmdArgs | Out-Null
+    }
 
     $tools = [pscustomobject]@{
+        Compiler = (Get-Command cl.exe -ErrorAction SilentlyContinue).Source
         CMake = Join-Path $vs 'Common7\IDE\CommonExtensions\Microsoft\CMake\CMake\bin\cmake.exe'
         Ninja = Join-Path $vs 'Common7\IDE\CommonExtensions\Microsoft\CMake\Ninja\ninja.exe'
     }

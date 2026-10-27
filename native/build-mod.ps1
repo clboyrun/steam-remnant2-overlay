@@ -65,7 +65,7 @@ else {
     if (-not (Test-Path $rustc) -or -not (Test-Path $cargo)) { throw "Rust toolchain at $sysroot looks incomplete. Run: rustup default stable" }
 
     & $tools.CMake -S $PSScriptRoot -B $build -G Ninja -DCMAKE_BUILD_TYPE=Game__Shipping__Win64 "-DCMAKE_MAKE_PROGRAM=$($tools.Ninja)" `
-        "-DRust_COMPILER=$rustc" "-DRust_CARGO=$cargo" -Wno-dev
+        "-DRust_COMPILER=$rustc" "-DRust_CARGO=$cargo" "-DCMAKE_C_COMPILER=$($tools.Compiler)" "-DCMAKE_CXX_COMPILER=$($tools.Compiler)" -Wno-dev
     if ($LASTEXITCODE -ne 0) { throw 'CMake configure failed (see above).' }
 
     # The same old Corrosion takes newer Rust's "/defaultlib:msvcrt" link flag for a library file, and Ninja then
