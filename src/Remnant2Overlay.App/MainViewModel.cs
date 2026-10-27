@@ -380,6 +380,7 @@ public sealed class MainViewModel : INotifyPropertyChanged
 
     private bool Matches(ItemTileViewModel t)
     {
+        if (_category == null) return true;
         if (!_category.Categories.Contains(t.Item.Category!.Value)) return false;
         if (_world.World is not null && t.Item.World != _world.World) return false;
         bool show = _show switch
