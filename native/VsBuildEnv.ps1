@@ -1,8 +1,8 @@
 # Shared by build-panel.ps1 and build-mod.ps1: finds the newest Visual Studio with the C++ tools, loads its 64-bit
 # build environment into this PowerShell session, and returns the CMake and Ninja that ship with it.
 #
-# -Vs2022Compiler picks the VS 2022 compiler (MSVC v143, 14.3x/14.4x) from any installed Visual Studio, newest first.
-# UE4SS 3.0.x doesn't compile with VS 2026's compiler (14.5x).
+# -Vs2022Compiler picks the MSVC 14.38-14.40 compiler from any installed Visual Studio, newest first. UE4SS 3.0.x's
+# Unreal headers (UEPseudo) don't compile with 14.41 or newer, VS 2026's 14.5x included.
 function Enter-VsBuildEnv([switch]$Vs2022Compiler) {
     $vswhere = Join-Path ${env:ProgramFiles(x86)} 'Microsoft Visual Studio\Installer\vswhere.exe'
     if (-not (Test-Path $vswhere)) { throw 'Visual Studio not found (no vswhere.exe). Install Visual Studio with "Desktop development with C++".' }
@@ -12,19 +12,19 @@ function Enter-VsBuildEnv([switch]$Vs2022Compiler) {
 
     $devCmdArgs = '-arch=x64 -host_arch=x64'
     if ($Vs2022Compiler) {
-        # Every installed v143 toolset, in any Visual Studio, newest version first.
+        # Every installed 14.38-14.40 toolset, in any Visual Studio, newest version first.
         $toolset = $all | ForEach-Object {
             $msvc = Join-Path $_ 'VC\Tools\MSVC'
             Get-ChildItem $msvc -Directory -ErrorAction SilentlyContinue |
-                Where-Object { $_.Name -match '^14\.[34]\d\.' } |
+                Where-Object { $_.Name -match '^14\.(3[89]|40)\.' } |
                 ForEach-Object { [pscustomobject]@{ Vs = $msvc | Split-Path | Split-Path | Split-Path; Version = [version]$_.Name } }
         } | Sort-Object Version -Descending | Select-Object -First 1
         if (-not $toolset) {
-            throw 'UE4SS 3.0.x needs the VS 2022 C++ compiler. In the Visual Studio Installer: Modify > Individual components > tick "MSVC v143 - VS 2022 C++ x64/x86 build tools (Latest)", then run this again.'
+            throw 'UE4SS 3.0.x needs the MSVC 14.40 compiler (14.41 and newer fail on its Unreal headers). In the Visual Studio Installer: Modify > Individual components > search "14.40" > tick "MSVC v143 - VS 2022 C++ x64/x86 build tools (v14.40-17.10)", then run this again.'
         }
         $vs = $toolset.Vs
         $devCmdArgs += " -vcvars_ver=$($toolset.Version)"
-        Write-Host "Using the VS 2022 compiler $($toolset.Version)"
+        Write-Host "Using the MSVC $($toolset.Version) compiler"
     }
     Write-Host "Using Visual Studio at $vs"
 
