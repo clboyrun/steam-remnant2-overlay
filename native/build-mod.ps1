@@ -56,7 +56,16 @@ if (Test-Path (Join-Path $ue4ss 'xmake.lua')) {
 else {
     $build = Join-Path $PSScriptRoot 'build-mod'
     Reset-BuildFolderIfNotNinja $build -Force:$Clean
-    & $tools.CMake -S $PSScriptRoot -B $build -G Ninja -DCMAKE_BUILD_TYPE=Game__Shipping__Win64 "-DCMAKE_MAKE_PROGRAM=$($tools.Ninja)"
+
+    # UE4SS 3.0.1 pins a Corrosion version that can't read newer rustup's toolchain list ("(active, default)"), so
+    # it finds no Rust. Point it straight at the real rustc and cargo of your default toolchain instead.
+    $sysroot = (rustc --print sysroot | Select-Object -First 1).Trim()
+    $rustc = Join-Path $sysroot 'bin\rustc.exe'
+    $cargo = Join-Path $sysroot 'bin\cargo.exe'
+    if (-not (Test-Path $rustc) -or -not (Test-Path $cargo)) { throw "Rust toolchain at $sysroot looks incomplete. Run: rustup default stable" }
+
+    & $tools.CMake -S $PSScriptRoot -B $build -G Ninja -DCMAKE_BUILD_TYPE=Game__Shipping__Win64 "-DCMAKE_MAKE_PROGRAM=$($tools.Ninja)" `
+        "-DRust_COMPILER=$rustc" "-DRust_CARGO=$cargo" -Wno-dev
     if ($LASTEXITCODE -ne 0) { throw 'CMake configure failed (see above).' }
     & $tools.CMake --build $build --target Remnant2Overlay
     if ($LASTEXITCODE -ne 0) { throw 'Build failed (see above).' }
