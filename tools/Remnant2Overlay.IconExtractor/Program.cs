@@ -39,7 +39,10 @@ if (paks is null)
 }
 
 outDir ??= Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Remnant2Overlay", "icons");
+usmap ??= GameLocator.FindMappingsFile(paks,
+    Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Remnant2Overlay"));
 var options = new IconExtractorOptions(paks, game, usmap, aes);
+Console.WriteLine($"Usmap:  {usmap ?? "none"}");
 Console.WriteLine($"Paks:   {paks}");
 Console.WriteLine($"Output: {outDir}");
 
@@ -61,4 +64,6 @@ var stage = new Progress<string>(Console.WriteLine);
 var result = IconSync.Run(cache, ItemDatabase.LoadEmbedded().Items, options, progress, msg => Console.Error.WriteLine("  " + msg),
     stage: stage);
 Console.WriteLine($"Done: {result.Extracted} extracted, {result.NotFound} not found. See index.json in the output folder.");
+if (result.NeedsMappings)
+    Console.WriteLine("The game needs a mappings file (.usmap) to read textures. Pass --usmap <file>; see README.");
 return 0;

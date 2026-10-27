@@ -231,7 +231,8 @@ public sealed class MainViewModel : INotifyPropertyChanged
                 return;
             }
 
-            var options = new IconExtractorOptions(paks, _settings.UnrealVersion, _settings.UsmapPath);
+            string? usmap = _settings.UsmapPath ?? GameLocator.FindMappingsFile(paks, Settings.DataDir);
+            var options = new IconExtractorOptions(paks, _settings.UnrealVersion, usmap);
             Log($"paks={options.PaksDir} version={options.UnrealVersion ?? "default"} usmap={options.UsmapPath ?? "none"}");
             var tilesByAsset = Tiles.ToDictionary(t => t.Item.AssetName);
 
@@ -259,6 +260,11 @@ public sealed class MainViewModel : INotifyPropertyChanged
                 foreach (var t in Tiles) t.ReloadIcon(_iconCache.PathFor(t.Item.AssetName));
 
             int have = Tiles.Count(t => t.HasIcon);
+            if (result.NeedsMappings)
+            {
+                IconStatus = $"Icons need a mappings file (.usmap). Put one in {Settings.DataDir} and click Re-extract icons. See README.";
+                return;
+            }
             IconStatus = result.Extracted + result.NotFound == 0
                 ? $"Icons: {have}/{Tiles.Count} cached"
                 : $"Icons: {have}/{Tiles.Count} cached ({result.Extracted} new, {result.NotFound} not found in game files)";

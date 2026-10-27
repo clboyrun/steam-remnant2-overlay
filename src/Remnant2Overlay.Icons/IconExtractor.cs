@@ -23,7 +23,7 @@ public sealed record IconExtractorOptions(
 }
 
 /// <summary>Reads item icons out of the user's own Remnant 2 paks with CUE4Parse.</summary>
-public sealed class IconExtractor : IDisposable
+public sealed partial class IconExtractor : IDisposable
 {
     private readonly DefaultFileProvider _provider;
     private readonly List<(GameFile File, string GamePath)> _iconPackages;
@@ -38,10 +38,12 @@ public sealed class IconExtractor : IDisposable
         _provider.SubmitKey(new FGuid(), new FAesKey(options.AesKey ?? "0x" + new string('0', 64)));
         TextureDecoder.UseAssetRipperTextureDecoder = true;
 
-        // Only packages with "icon" in the name are candidates; indexing them up front keeps lookups cheap.
+        // Candidates: packages with "icon" in the name, or anything in a UI icon folder (Remnant 2 keeps item
+        // icons in .../UI_Icons/... as T_UI_<Type>_<Name>_Icon). Indexing them up front keeps lookups cheap.
         _iconPackages = _provider.Files.Values
             .Where(f => f.Extension.Equals("uasset", StringComparison.OrdinalIgnoreCase)
-                        && f.NameWithoutExtension.Contains("icon", StringComparison.OrdinalIgnoreCase))
+                        && (f.NameWithoutExtension.Contains("icon", StringComparison.OrdinalIgnoreCase)
+                            || f.Path.Contains("/UI_Icons", StringComparison.OrdinalIgnoreCase)))
             .Select(f => (File: f, GamePath: ToGamePath(f.PathWithoutExtension)))
             .Where(p => p.GamePath is not null)
             .Select(p => (p.File, p.GamePath!))
@@ -49,6 +51,9 @@ public sealed class IconExtractor : IDisposable
     }
 
     public int MountedFileCount => _provider.Files.Count;
+
+    /// <summary>Set once a texture fails because the game needs a .usmap mappings file to be read.</summary>
+    public bool NeedsMappings { get; private set; }
 
     public IEnumerable<string> IconPackagePaths => _iconPackages.Select(p => p.GamePath);
 
@@ -67,19 +72,33 @@ public sealed class IconExtractor : IDisposable
     {
         string folder = item.ProfileId[..item.ProfileId.LastIndexOf('/')];
         string stem = Normalize(item.AssetName[(item.AssetName.IndexOf('_') + 1)..]);
+        // Word sets, in any order: Armor_Head_Elder -> {head, elder}; display name "Bruiser Bodyplate" -> {bruiser, bodyplate}.
+        var assetWords = Words(item.AssetName).Skip(1).ToHashSet();
+        var nameWordList = Words(item.DisplayName).ToList();
+        var nameWords = nameWordList.ToHashSet();
 
-        // Icon-named textures in the item's folder tree, then icon-named textures anywhere that mention the item.
         var candidates = _iconPackages
-            .Select(p => (p.File, p.GamePath,
-                InFolder: p.GamePath.StartsWith(folder + "/", StringComparison.OrdinalIgnoreCase),
-                NameMatch: Normalize(p.File.NameWithoutExtension).Contains(stem, StringComparison.OrdinalIgnoreCase)))
-            .Where(p => p.InFolder || p.NameMatch)
-            .OrderByDescending(p => p.NameMatch)
-            .ThenByDescending(p => p.InFolder)
-            .ThenBy(p => p.File.NameWithoutExtension.Length);
+            .Select(p =>
+            {
+                string name = Normalize(p.File.NameWithoutExtension);
+                var words = Words(p.File.NameWithoutExtension).ToHashSet();
+                int score =
+                    (name.Contains(stem, StringComparison.OrdinalIgnoreCase) ? 4 : 0)
+                    + (assetWords.Count > 0 && assetWords.IsSubsetOf(words) ? 3 : 0)
+                    + (nameWords.Count > 0 && (nameWords.IsSubsetOf(words) || name.Contains(string.Concat(nameWordList), StringComparison.OrdinalIgnoreCase)) ? 3 : 0)
+                    + (p.GamePath.StartsWith(folder + "/", StringComparison.OrdinalIgnoreCase) ? 1 : 0);
+                // Ignore folder-only hits that aren't textures by convention (widgets, AI controllers…).
+                bool plausible = score > 1 || p.File.NameWithoutExtension.StartsWith("T_", StringComparison.OrdinalIgnoreCase);
+                return (p.File, p.GamePath, Score: plausible ? score : 0);
+            })
+            .Where(p => p.Score > 0)
+            .OrderByDescending(p => p.Score)
+            .ThenByDescending(p => p.GamePath.Contains("/UI_Icons", StringComparison.OrdinalIgnoreCase))
+            .ThenBy(p => p.File.NameWithoutExtension.Length)
+            .Take(5);
 
         int tried = 0;
-        foreach (var (file, gamePath, _, _) in candidates)
+        foreach (var (file, gamePath, _) in candidates)
         {
             tried++;
             try
@@ -108,6 +127,7 @@ public sealed class IconExtractor : IDisposable
             }
             catch (Exception e)
             {
+                if (e.GetType().Name == "MappingException") NeedsMappings = true;
                 log?.Invoke($"  error {gamePath}: {e.GetType().Name}: {e.Message}");
             }
         }
@@ -125,5 +145,14 @@ public sealed class IconExtractor : IDisposable
         return i < 0 ? null : "/Game/" + pathWithoutExtension[(i + "/Content/".Length)..];
     }
 
-    private static string Normalize(string s) => s.Replace("_", "").Replace("'", "");
+    private static string Normalize(string s) => s.Replace("_", "").Replace("'", "").Replace(" ", "");
+
+    // Splits on underscores, spaces and CamelCase, lower-cased, dropping noise like T, UI, Icon and numbers.
+    private static IEnumerable<string> Words(string s) =>
+        WordRegex().Matches(s.Replace("'", ""))
+            .Select(m => m.Value.ToLowerInvariant())
+            .Where(w => w is not ("t" or "ui" or "icon" or "the" or "of" or "a") && !char.IsDigit(w[0]));
+
+    [System.Text.RegularExpressions.GeneratedRegex("[A-Z]+(?![a-z])|[A-Z]?[a-z]+|[0-9]+")]
+    private static partial System.Text.RegularExpressions.Regex WordRegex();
 }

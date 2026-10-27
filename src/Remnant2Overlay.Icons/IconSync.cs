@@ -4,7 +4,7 @@ namespace Remnant2Overlay.Icons;
 
 public sealed record IconSyncProgress(int Done, int Total, string AssetName, string? IconPath);
 
-public sealed record IconSyncResult(int Extracted, int NotFound);
+public sealed record IconSyncResult(int Extracted, int NotFound, bool NeedsMappings = false);
 
 /// <summary>Fills the icon cache with whatever icons are missing. Safe to call on every start-up.</summary>
 public static class IconSync
@@ -18,7 +18,9 @@ public static class IconSync
         CancellationToken cancellationToken = default,
         IProgress<string>? stage = null)
     {
-        string signature = IconExtractor.PaksSignature(options.PaksDir);
+        // Include the mappings file: adding one makes earlier misses worth retrying.
+        string signature = IconExtractor.PaksSignature(options.PaksDir)
+                           + (options.UsmapPath is { } usmap && File.Exists(usmap) ? $"|usmap:{new FileInfo(usmap).Length}" : "");
         var index = cache.LoadIndex();
         var todo = cache.ItemsToExtract(items, index, signature);
         if (todo.Count == 0) return new IconSyncResult(0, 0);
@@ -56,7 +58,8 @@ public static class IconSync
                 if (source is null)
                 {
                     log?.Invoke($"MISSING {item.AssetName} ({item.ProfileId})");
-                    index.Missing.Add(item.AssetName);
+                    // Without mappings nothing can be read, so don't remember these as "no icon".
+                    if (!extractor.NeedsMappings) index.Missing.Add(item.AssetName);
                     notFound++;
                 }
                 else
@@ -79,6 +82,6 @@ public static class IconSync
             cache.SaveIndex(index);
         }
 
-        return new IconSyncResult(extracted, notFound);
+        return new IconSyncResult(extracted, notFound, extractor.NeedsMappings);
     }
 }

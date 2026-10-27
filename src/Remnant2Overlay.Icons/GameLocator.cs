@@ -39,6 +39,27 @@ public static partial class GameLocator
         return paks;
     }
 
+    /// <summary>
+    /// Looks for a .usmap mappings file: next to the game executable (where UE4SS writes Mappings.usmap),
+    /// then in <paramref name="extraFolders"/>. Newest file wins.
+    /// </summary>
+    public static string? FindMappingsFile(string paksDir, params string[] extraFolders)
+    {
+        // Paks is <game>/Remnant2/Content/Paks; the executable lives in <game>/Remnant2/Binaries/Win64.
+        string? gameRoot = Directory.GetParent(paksDir)?.Parent?.FullName;
+        var folders = new List<string>(extraFolders);
+        if (gameRoot is not null)
+        {
+            folders.Insert(0, Path.Combine(gameRoot, "Binaries", "Win64"));
+            folders.Insert(1, Path.Combine(gameRoot, "Binaries", "Win64", "ue4ss"));
+        }
+
+        return folders.Where(Directory.Exists)
+            .SelectMany(f => Directory.EnumerateFiles(f, "*.usmap", SearchOption.TopDirectoryOnly))
+            .OrderByDescending(File.GetLastWriteTimeUtc)
+            .FirstOrDefault();
+    }
+
     private static IEnumerable<string> SteamLibraries()
     {
         var roots = new List<string>();
