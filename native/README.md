@@ -16,7 +16,7 @@ Ctrl+Shift+O) and the panel stays current. It picks up changes within about a se
 
 ## Prerequisites
 
-- Visual Studio 2022 with **Desktop development with C++**.
+- Visual Studio 2022 or 2026 with **Desktop development with C++**.
 - [CMake](https://cmake.org/) 3.24+ (Visual Studio's copy works from a Developer PowerShell).
 - [xmake](https://xmake.io/) and [Rust](https://rustup.rs/) (RE-UE4SS needs both to build).
 - UE4SS installed in the game (you already have it, from generating the mappings file).
@@ -41,16 +41,17 @@ Ctrl+Shift+O) and the panel stays current. It picks up changes within about a se
    xmake
    ```
 
-3. Build the panel:
+3. Build the panel. Open the **x64 Native Tools Command Prompt** for your Visual Studio from the Start menu (not
+   the plain Developer prompt, which builds 32-bit). It works for VS 2022 and 2026, and Ninja comes with Visual Studio:
 
-   ```powershell
-   cd native/Remnant2Overlay.InGame
-   cmake -B build -G "Visual Studio 17 2022" -A x64
-   cmake --build build --config Release
+   ```bat
+   cd native\Remnant2Overlay.InGame
+   cmake -B build -G Ninja -DCMAKE_BUILD_TYPE=Release
+   cmake --build build
    ```
 
-   If CMake says the generator "does not support platform specification", an earlier run picked NMake and cached
-   it: delete the `build` folder and run the commands again.
+   If CMake complains about the generator or platform, an earlier run cached a different setup: delete the `build`
+   folder and run the commands again.
 
 4. Install both into the game (finds the game through Steam; pass `-GameDir` if it doesn't):
 
