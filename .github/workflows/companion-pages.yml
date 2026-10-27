@@ -1,0 +1,58 @@
+# Builds the phone companion (Blazor WebAssembly) and publishes it to GitHub Pages.
+# Set the repository variable GOOGLE_WEB_CLIENT_ID (Settings > Secrets and variables > Actions > Variables) to the
+# Web application OAuth client ID; without it the app asks for the ID on first open.
+name: Companion app
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - src/Remnant2Overlay.Companion/**
+      - src/Remnant2Overlay.Sync/**
+      - src/Remnant2Overlay.SaveReader/**
+      - .github/workflows/companion-pages.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          global-json-file: global.json
+      - name: Set Google client ID
+        env:
+          CLIENT_ID: ${{ vars.GOOGLE_WEB_CLIENT_ID }}
+        run: |
+          printf '{\n  "GoogleClientId": "%s"\n}\n' "$CLIENT_ID" > src/Remnant2Overlay.Companion/wwwroot/appsettings.json
+      - name: Publish
+        run: dotnet publish src/Remnant2Overlay.Companion -c Release -o publish
+      # The site zip is also kept as a build artifact, for hosting somewhere other than GitHub Pages.
+      - uses: actions/upload-artifact@v4
+        with:
+          name: companion-site
+          path: publish/wwwroot
+          include-hidden-files: true
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: publish/wwwroot
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4

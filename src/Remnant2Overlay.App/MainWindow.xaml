@@ -184,10 +184,15 @@
                     <Button Content="Game folder…" Style="{StaticResource FlatButton}" Click="GameFolder_Click"
                             ToolTip="Where Remnant 2 is installed (used to extract icons)" />
                     <Button Content="Re-extract icons" Style="{StaticResource FlatButton}" Click="ReextractIcons_Click" />
+                    <ToggleButton x:Name="PhoneSyncToggle" Content="Phone sync" Padding="10,4" Margin="0,0,6,0"
+                                  Click="PhoneSync_Click"
+                                  ToolTip="Sign in with Google to share your items, run map and manual marks with the phone app" />
                 </WrapPanel>
                 <StackPanel VerticalAlignment="Center">
                     <TextBlock Text="{Binding Status}" Foreground="{StaticResource Muted}" TextTrimming="CharacterEllipsis" />
                     <TextBlock Text="{Binding IconStatus}" Foreground="{StaticResource Muted}" FontSize="11"
+                               TextTrimming="CharacterEllipsis" />
+                    <TextBlock Text="{Binding SyncStatus}" Foreground="{StaticResource Muted}" FontSize="11"
                                TextTrimming="CharacterEllipsis" />
                 </StackPanel>
             </DockPanel>

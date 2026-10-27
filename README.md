@@ -13,6 +13,8 @@ Run the game in **borderless windowed** mode so the overlay can sit on top of it
 | `src/Remnant2Overlay.App` | WPF overlay window |
 | `src/Remnant2Overlay.SaveReader` | Save decompression, owned-item reader, bundled item list (`Data/items.json`) |
 | `src/Remnant2Overlay.Icons` | Finds the game install and extracts icons into the local cache (CUE4Parse) |
+| `src/Remnant2Overlay.Sync` | Phone sync file, merge rules and Google Drive app data client (shared by overlay and phone app) |
+| `src/Remnant2Overlay.Companion` | Phone companion app (Blazor WebAssembly, installable from the browser) |
 | `src/Remnant2Overlay.Cli` | Prints owned/total per category and the owned items from a `profile.sav` |
 | `tools/Remnant2Overlay.IconExtractor` | Command-line icon extraction, for re-running or debugging it |
 | `native/` | In-game panel: UE4SS C++ mod plus a DirectX 12 ImGui panel (Home in game). See [native/README.md](native/README.md) |
@@ -48,6 +50,56 @@ Run the game in **borderless windowed** mode so the overlay can sit on top of it
   you've finished the quest or event it comes from, and the how-to-get-it note. Right-click opens details in manual mode.
 - **Manual mode**: click tiles to mark them owned or missing yourself (marked with ✎), and pick the world
   you rolled in the world filter. Choices are saved in `%LOCALAPPDATA%\Remnant2Overlay\settings.json`.
+
+## Phone sync
+
+The phone companion shows the same items, run map and quest status as the overlay, and lets you mark items owned or
+missing and pick the adventure world from your phone. The overlay and the phone share one file in your Google
+Drive's hidden **app data** folder: only this app can read it, it doesn't show up in your Drive, and it doesn't
+count against anything you can see. The overlay uploads after every save reload and manual change and checks for
+the phone's changes every minute; the phone syncs when you open it or tap **Sync**. Manual marks made on both sides
+are merged item by item (the later change wins).
+
+### One-time Google Cloud setup
+
+Both apps sign in through an OAuth client in **your own** Google Cloud project (free). Both clients must be in the
+same project, because the app data folder belongs to the project.
+
+1. Open [Google Cloud Console](https://console.cloud.google.com/), create a project (e.g. "Remnant 2 Overlay").
+2. **APIs & Services → Library**: enable the **Google Drive API**.
+3. **Google Auth Platform** (the OAuth consent screen) → **Get started**: app name "Remnant 2 Overlay", your email,
+   audience **External**. Under **Data Access → Add or remove scopes**, add `.../auth/drive.appdata`, `openid` and
+   `.../auth/userinfo.email`.
+4. Under **Audience**, either add your Google account as a **test user**, or click **Publish app**. In testing mode
+   Google expires the overlay's sign-in after 7 days; `drive.appdata` is a non-sensitive scope, so publishing doesn't
+   need Google's review for your own use.
+5. **Clients → Create client → Desktop app**. Download the JSON and save it as
+   `%LOCALAPPDATA%\Remnant2Overlay\google-client.json`.
+6. **Clients → Create client → Web application**. Under **Authorized JavaScript origins** add the address you host the
+   phone app at (e.g. `https://clboyrun.github.io`; add `http://localhost:5280` too for local testing). Copy the client ID.
+
+### Overlay
+
+Click **Phone sync** in the bottom bar. Your browser opens for Google sign-in the first time; after that the overlay
+signs in by itself. The status line shows the last sync. Turning **Phone sync** off signs out and leaves the file in Drive.
+
+### Hosting the phone app
+
+The app is a static website, so any static host works. The `Companion app` GitHub Actions workflow builds it on every
+push to `main` that touches it, and on demand from the Actions tab:
+
+- **GitHub Pages**: Settings → Pages → Source **GitHub Actions**. Pages on a private repository needs a paid GitHub plan.
+  Set the repository variable `GOOGLE_WEB_CLIENT_ID` (Settings → Secrets and variables → Actions → Variables) to the
+  Web client ID so the app has it built in.
+- **Anywhere else** (Netlify Drop, Cloudflare Pages…): download the `companion-site` artifact from the workflow run and
+  upload its contents. Add that site's address to the Web client's JavaScript origins. Without the variable set, the
+  app asks for the client ID the first time it opens.
+
+On the phone, open the site, tap **Sign in**, and add it to the home screen (Chrome: menu → *Add to Home screen*;
+Safari: Share → *Add to Home Screen*). It opens with the last synced data even offline. Google's sign-in token lasts
+about an hour, after which the button says **Sign in** again; one tap renews it.
+
+To run it locally: `dotnet run --project src/Remnant2Overlay.Companion` and open http://localhost:5280.
 
 ## Icon extraction notes
 

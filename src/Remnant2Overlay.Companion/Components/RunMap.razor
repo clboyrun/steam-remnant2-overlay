@@ -1,0 +1,75 @@
+@* Rolled worlds, locations and drop sources that still have something for this character, like the overlay's Run map. *@
+
+@if (Collection.Run is not { } run)
+{
+    <p class="muted">No run info from the overlay for this character. Use the Items tab and pick the world you rolled.</p>
+}
+else
+{
+    @foreach (var zone in run.Zones)
+    {
+        int zoneCount = Count(zone.Locations.SelectMany(l => l.Sources));
+        <details class="zone" open="@(zoneCount > 0 && zone.World != "Ward 13")">
+            <summary>
+                <span class="title">@zone.World</span>
+                <span class="muted small">
+                    @(zone.World == "Ward 13" ? "" : $"{zone.Story}: {(zone.StoryFinished ? "story done" : "story in progress")} · ")@(zoneCount == 0 ? "nothing new" : $"{zoneCount} to collect")
+                </span>
+            </summary>
+            @foreach (var location in zone.Locations)
+            {
+                int count = Count(location.Sources);
+                <details class="location" open="@(count > 0)">
+                    <summary>
+                        <span class="title">@location.Name</span>
+                        <span class="muted small">
+                            @(count == 0 ? "nothing new" : $"{count} to collect")@(location.WorldStones.Count > 0 ? $" · stones: {string.Join(", ", location.WorldStones)}" : "")
+                        </span>
+                    </summary>
+                    @foreach (var source in location.Sources)
+                    {
+                        var items = source.Items.Where(Collection.Wanted).ToList();
+                        if (items.Count == 0) continue;
+                        <div class="source">
+                            <div class="source-name">
+                                @(source.Name == location.Name ? "Around the area" : source.Name)
+                                @if (source.Name != location.Name) { <span class="muted small">@source.Kind</span> }
+                            </div>
+                            @foreach (var item in items)
+                            {
+                                <button class="run-item @Labels.StatusClass(item.Status)" @onclick="() => OpenItem.InvokeAsync(item.Id)">
+                                    <span>@item.Name</span>
+                                    <span class="muted small">@Detail(item)</span>
+                                </button>
+                            }
+                        </div>
+                    }
+                </details>
+            }
+        </details>
+    }
+
+    @if (run.QuestItems.Count > 0 || run.RespawnPoint is not null)
+    {
+        <p class="muted small">
+            @if (run.QuestItems.Count > 0) { <span>Quest items held: @string.Join(", ", run.QuestItems)</span><br /> }
+            @if (run.RespawnPoint is not null) { <span>Last checkpoint: @run.RespawnPoint</span> }
+        </p>
+    }
+}
+
+@code {
+    [Parameter, EditorRequired] public Collection Collection { get; set; } = null!;
+    [Parameter] public EventCallback<string> OpenItem { get; set; }
+
+    // Missed items are listed but not counted, as in the overlay.
+    private int Count(IEnumerable<SourceSnapshot> sources) =>
+        sources.SelectMany(s => s.Items).Count(i => Collection.Wanted(i) && i.Status != "MissedThisRun");
+
+    private static string? Detail(RunItemSnapshot item) => item.Status switch
+    {
+        "NeedsPrerequisite" => $"needs {item.Prerequisite ?? "a quest step"}",
+        "MissedThisRun" => "already taken or skipped this run",
+        _ => item.HasRequiredMaterial ? "ready to craft" : null,
+    };
+}

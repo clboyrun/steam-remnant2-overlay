@@ -6,6 +6,7 @@ using System.Windows.Data;
 using lib.remnant2.analyzer.Enums;
 using Remnant2Overlay.Icons;
 using Remnant2Overlay.SaveReader;
+using Remnant2Overlay.Sync;
 
 namespace Remnant2Overlay.App;
 
@@ -51,6 +52,8 @@ public sealed class MainViewModel : INotifyPropertyChanged
     private bool _nothingLeft;
     private bool _showRunView;
     private ItemDetails? _details;
+    private DateTimeOffset _saveReadAt;
+    private string _syncStatus = "";
 
     public MainViewModel(Settings settings)
     {
@@ -115,7 +118,12 @@ public sealed class MainViewModel : INotifyPropertyChanged
         set
         {
             if (!Set(ref _world, value)) return;
-            _settings.AdventureWorld = value.World;
+            if (_settings.AdventureWorld != value.World)
+            {
+                _settings.AdventureWorld = value.World;
+                _settings.AdventureWorldChangedAt = DateTimeOffset.UtcNow;
+                SyncNeeded?.Invoke();
+            }
             Refresh();
         }
     }
@@ -135,6 +143,10 @@ public sealed class MainViewModel : INotifyPropertyChanged
     public bool ShowRunView { get => _showRunView; set => Set(ref _showRunView, value); }
     public string Status { get => _status; private set => Set(ref _status, value); }
     public string IconStatus { get => _iconStatus; private set => Set(ref _iconStatus, value); }
+    public string SyncStatus { get => _syncStatus; set => Set(ref _syncStatus, value); }
+
+    /// <summary>Raised when the save reloads or a manual choice changes, so the phone sync can upload it.</summary>
+    public event Action? SyncNeeded;
     public string RunSummary { get => _runSummary; private set => Set(ref _runSummary, value); }
     public string QuestStatus { get => _questStatus; private set => Set(ref _questStatus, value); }
     public bool NothingLeft { get => _nothingLeft; private set => Set(ref _nothingLeft, value); }
@@ -252,10 +264,16 @@ public sealed class MainViewModel : INotifyPropertyChanged
             }
         }
 
+        // The newest save file's write time, so an overlay restart doesn't count as a newer save for the phone.
+        _saveReadAt = Directory.EnumerateFiles(Path.GetDirectoryName(Path.GetFullPath(path))!, "*.sav")
+            .Select(f => new DateTimeOffset(File.GetLastWriteTimeUtc(f)))
+            .DefaultIfEmpty(DateTimeOffset.UtcNow).Max();
+
         Changed(nameof(CharacterNames));
         if (_characterIndex >= Math.Max(_characters.Count, _fallbackInventories.Count)) _characterIndex = 0;
         Changed(nameof(CharacterIndex));
         ApplyCharacter();
+        SyncNeeded?.Invoke();
     }
 
     /// <summary>
@@ -362,21 +380,82 @@ public sealed class MainViewModel : INotifyPropertyChanged
             tile.ManualOverride = null;
             overrides.Remove(tile.Item.AssetName);
         }
+        OverrideTimesForCharacter()[tile.Item.AssetName] = DateTimeOffset.UtcNow;
 
         Refresh();
         BuildRunTree();
         RefreshDetails();
+
         ExportInGameState();
+        SyncNeeded?.Invoke();
     }
 
     public void ClearManual()
     {
-        OverridesForCharacter().Clear();
+        var overrides = OverridesForCharacter();
+        var times = OverrideTimesForCharacter();
+        var now = DateTimeOffset.UtcNow;
+        foreach (string asset in overrides.Keys) times[asset] = now;
+        overrides.Clear();
         foreach (var t in Tiles) t.ManualOverride = null;
         Refresh();
         BuildRunTree();
         RefreshDetails();
+        
         ExportInGameState();
+        SyncNeeded?.Invoke();
+    }
+
+    /// <summary>This overlay's side of the phone sync file: the save as read, plus manual marks with their times.</summary>
+    public SyncDocument BuildSyncDocument()
+    {
+        SaveSnapshot? save = _characters.Count > 0 ? SyncSnapshot.FromRuns(_db, _characters, _saveReadAt, Status)
+            : _fallbackInventories.Count > 0 ? SyncSnapshot.FromInventories(_db, _fallbackInventories, _saveReadAt, Status)
+            : null;
+
+        var marks = new Dictionary<int, Dictionary<string, OverrideMark>>();
+        foreach (int character in _settings.ManualOverrides.Keys.Union(_settings.ManualOverrideTimes.Keys))
+        {
+            var overrides = _settings.ManualOverrides.GetValueOrDefault(character) ?? [];
+            var times = _settings.ManualOverrideTimes.GetValueOrDefault(character) ?? [];
+            var forCharacter = overrides.Keys.Union(times.Keys).ToDictionary(
+                asset => asset,
+                // Marks made before sync existed have no time, so any change from the phone wins over them.
+                asset => new OverrideMark(overrides.TryGetValue(asset, out bool owned) ? owned : null, times.GetValueOrDefault(asset)));
+            if (forCharacter.Count > 0) marks[character] = forCharacter;
+        }
+
+        return new SyncDocument
+        {
+            Save = save,
+            ManualOverrides = marks,
+            AdventureWorld = _settings.AdventureWorld is null && _settings.AdventureWorldChangedAt is null
+                ? null
+                : new Stamped<string?>(_settings.AdventureWorld, _settings.AdventureWorldChangedAt ?? default),
+        };
+    }
+
+    /// <summary>Takes the manual marks and adventure pick from a merged sync file (changes made on the phone).</summary>
+    public void ApplySynced(SyncDocument merged)
+    {
+        _settings.ManualOverrides = merged.ManualOverrides.ToDictionary(kv => kv.Key, kv => SyncMerge.ActiveOverrides(merged, kv.Key));
+        _settings.ManualOverrideTimes = merged.ManualOverrides.ToDictionary(
+            kv => kv.Key, kv => kv.Value.ToDictionary(m => m.Key, m => m.Value.UpdatedAt));
+
+        if (merged.AdventureWorld is { } adventure && adventure.Value != _settings.AdventureWorld)
+        {
+            _settings.AdventureWorld = adventure.Value;
+            _settings.AdventureWorldChangedAt = adventure.UpdatedAt;
+            _world = Worlds.FirstOrDefault(w => w.World == adventure.Value) ?? Worlds[0];
+            Changed(nameof(World));
+        }
+
+        var overrides = OverridesForCharacter();
+        foreach (var t in Tiles)
+            t.ManualOverride = overrides.TryGetValue(t.Item.AssetName, out bool o) ? o : null;
+        Refresh();
+        BuildRunTree();
+        RefreshDetails();
     }
 
     private CharacterRuns? CurrentCharacter => _characterIndex < _characters.Count ? _characters[_characterIndex] : null;
@@ -544,6 +623,13 @@ public sealed class MainViewModel : INotifyPropertyChanged
         if (!_settings.ManualOverrides.TryGetValue(_characterIndex, out var overrides))
             _settings.ManualOverrides[_characterIndex] = overrides = [];
         return overrides;
+    }
+
+    private Dictionary<string, DateTimeOffset> OverrideTimesForCharacter()
+    {
+        if (!_settings.ManualOverrideTimes.TryGetValue(_characterIndex, out var times))
+            _settings.ManualOverrideTimes[_characterIndex] = times = [];
+        return times;
     }
 
     private bool Matches(ItemTileViewModel t)
