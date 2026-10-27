@@ -131,3 +131,17 @@ footer { margin-top: 24px; text-align: center; }
 }
 #blazor-error-ui .reload { color: #fff; margin-left: 8px; }
 #blazor-error-ui .dismiss { float: right; cursor: pointer; }
+
+/* Console / no-overlay mode */
+.tabs.mode { margin-top: 0; }
+.tabs.mode button { min-height: 34px; padding: 4px 8px; font-size: 13.5px; }
+.item-row { display: flex; align-items: stretch; }
+.item-row .item-head { flex: 1; min-width: 0; }
+.tick { flex: 0 0 52px; border: 0; border-left: 1px solid var(--line); border-radius: 0 8px 8px 0; color: var(--muted); font-size: 20px; }
+.tick.on { background: var(--owned); color: #14161a; }
+.item.owned .tick { border-left-color: var(--owned); }
+button.danger { background: var(--missed); border-color: var(--missed); color: #fff; }
+h2.spaced { margin-top: 18px; }
+.file-link { color: var(--accent); text-decoration: underline; cursor: pointer; }
+label.button { display: inline-flex; align-items: center; background: var(--panel); border: 1px solid var(--line); border-radius: 8px; padding: 8px 12px; min-height: 40px; cursor: pointer; }
+.file-link input[type=file], label.button input[type=file] { display: none; }

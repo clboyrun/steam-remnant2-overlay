@@ -1,0 +1,144 @@
+@* Characters kept on this device (console players): pick one, add, rename, delete, import a PC save, back up. *@
+@implements IDisposable
+@inject ProfileStore Profiles
+@inject IJSRuntime Js
+
+@if (Profiles.Active is not { } active)
+{
+    <section class="card">
+        <h2>Add your first character</h2>
+        <p>Your items are kept in this browser only, so there's nothing to sign in to. Add a character for each one
+           you play and switch between them any time.</p>
+        <div class="row">
+            <input placeholder="Character name, e.g. PS5 Handler" @bind="_newName" @bind:event="oninput" />
+            <button class="primary" @onclick="CreateAsync">Add</button>
+        </div>
+        <p class="muted small">
+            Playing on Steam? <label class="file-link">Import profile.sav<InputFile OnChange="ImportAsync" accept=".sav,.json" /></label>
+            from %USERPROFILE%\Saved Games\Remnant2\Steam\&lt;id&gt;, or a backup from this app.
+        </p>
+    </section>
+}
+else
+{
+    <section class="pickers">
+        <select value="@active.Id" @onchange="e => Profiles.SwitchAsync((string)e.Value!)">
+            @foreach (var p in Profiles.Profiles)
+            {
+                <option value="@p.Id">@p.Name (@p.Owned.Count @(p.Owned.Count == 1 ? "item" : "items"))</option>
+            }
+        </select>
+        <button @onclick="ToggleManage">@(_managing ? "Done" : "Characters")</button>
+    </section>
+
+    @if (_managing)
+    {
+        <section class="card">
+            <h2>@active.Name</h2>
+            <div class="row">
+                <input placeholder="New name" @bind="_rename" @bind:event="oninput" />
+                <button disabled="@string.IsNullOrWhiteSpace(_rename)" @onclick="RenameAsync">Rename</button>
+            </div>
+            @if (_confirmDelete)
+            {
+                <div class="row">
+                    <button class="danger" @onclick="DeleteAsync">Delete @active.Name and its @active.Owned.Count items</button>
+                    <button @onclick="() => _confirmDelete = false">Keep</button>
+                </div>
+            }
+            else
+            {
+                <button @onclick="() => _confirmDelete = true">Delete this character…</button>
+            }
+
+            <h2 class="spaced">Add another</h2>
+            <div class="row">
+                <input placeholder="Character name" @bind="_newName" @bind:event="oninput" />
+                <button @onclick="CreateAsync">Add</button>
+            </div>
+
+            <h2 class="spaced">Move or back up</h2>
+            <p class="muted small">Characters live in this browser only. Save a backup file to move them to another phone or
+               browser, or in case the browser's data gets cleared.</p>
+            <div class="row">
+                <button @onclick="ExportAsync">Save backup</button>
+                <label class="button">Import file…<InputFile OnChange="ImportAsync" accept=".sav,.json" /></label>
+            </div>
+            <p class="muted small">Import takes a backup from this app or a Steam profile.sav (one character per character in the save).</p>
+        </section>
+    }
+}
+
+@if (_status is not null)
+{
+    <p class="status">@_status</p>
+}
+
+@code {
+    private const long MaxImportBytes = 64 * 1024 * 1024;
+
+    private bool _managing;
+    private bool _confirmDelete;
+    private string _newName = "";
+    private string _rename = "";
+    private string? _status;
+
+    protected override void OnInitialized() => Profiles.Changed += OnChanged;
+
+    public void Dispose() => Profiles.Changed -= OnChanged;
+
+    private void OnChanged() => InvokeAsync(StateHasChanged);
+
+    private void ToggleManage()
+    {
+        _managing = !_managing;
+        _confirmDelete = false;
+        _rename = "";
+        _status = null;
+    }
+
+    private async Task CreateAsync()
+    {
+        var profile = await Profiles.CreateAsync(_newName);
+        _newName = "";
+        _managing = false;
+        _status = $"Added {profile.Name}. Tap items to tick them off.";
+    }
+
+    private async Task RenameAsync()
+    {
+        if (Profiles.Active is not { } active) return;
+        await Profiles.RenameAsync(active.Id, _rename);
+        _rename = "";
+    }
+
+    private async Task DeleteAsync()
+    {
+        if (Profiles.Active is not { } active) return;
+        await Profiles.DeleteAsync(active.Id);
+        _confirmDelete = false;
+        _status = $"Deleted {active.Name}.";
+    }
+
+    private async Task ExportAsync()
+    {
+        await Js.InvokeVoidAsync("companionFiles.download", $"remnant2-characters-{DateTime.Now:yyyy-MM-dd}.json", Profiles.ExportJson());
+        _status = "Backup saved to your downloads.";
+    }
+
+    private async Task ImportAsync(InputFileChangeEventArgs e)
+    {
+        try
+        {
+            using var stream = e.File.OpenReadStream(MaxImportBytes);
+            using var buffer = new MemoryStream();
+            await stream.CopyToAsync(buffer);
+            _status = await Profiles.ImportAsync(e.File.Name, buffer.ToArray());
+            _managing = false;
+        }
+        catch (Exception ex)
+        {
+            _status = $"Couldn't import {e.File.Name}: {ex.Message}";
+        }
+    }
+}
