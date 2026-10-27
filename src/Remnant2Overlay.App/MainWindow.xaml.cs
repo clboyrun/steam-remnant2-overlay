@@ -45,14 +45,15 @@ public partial class MainWindow : Window
         WatchSave();
     }
 
-    // The game rewrites profile.sav on checkpoints; reload shortly after it settles.
+    // The game rewrites the saves on checkpoints; reload shortly after they settle.
     private void WatchSave()
     {
         _watcher?.Dispose();
         _watcher = null;
         if (_settings.ProfilePath is not { } path || !File.Exists(path)) return;
 
-        _watcher = new FileSystemWatcher(Path.GetDirectoryName(path)!, Path.GetFileName(path))
+        // Watch profile.sav and save_N.sav: the world save changes when you roll or progress a run.
+        _watcher = new FileSystemWatcher(Path.GetDirectoryName(path)!, "*.sav")
         {
             NotifyFilter = NotifyFilters.LastWrite | NotifyFilters.Size,
             EnableRaisingEvents = true,

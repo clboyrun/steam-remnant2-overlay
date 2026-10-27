@@ -3,18 +3,33 @@ using System.ComponentModel;
 using System.IO;
 using System.Runtime.CompilerServices;
 using System.Windows.Data;
+using lib.remnant2.analyzer.Enums;
 using Remnant2Overlay.SaveReader;
 
 namespace Remnant2Overlay.App;
 
 public sealed record CategoryFilter(string Label, ItemCategory[] Categories);
 public sealed record WorldFilter(string Label, string? World);
+public sealed record RunChoice(string Label, WorldSlot Slot);
+
+/// <summary>A row in the run tree: world, location, drop source, or item.</summary>
+public sealed class RunNode
+{
+    public required string Title { get; init; }
+    public string? Detail { get; init; }
+    public RunItemStatus? Status { get; init; }
+    public bool IsExpanded { get; set; }
+    public List<RunNode> Children { get; init; } = [];
+}
 
 public sealed class MainViewModel : INotifyPropertyChanged
 {
+    private static readonly RunItemStatus[] Collectable = [RunItemStatus.Available, RunItemStatus.NeedsPrerequisite, RunItemStatus.MissedThisRun];
+
     private readonly Settings _settings;
     private readonly ItemDatabase _db = ItemDatabase.LoadEmbedded();
-    private IReadOnlyList<CharacterInventory> _characters = [];
+    private IReadOnlyList<CharacterRuns> _characters = [];
+    private IReadOnlyList<CharacterInventory> _fallbackInventories = [];
 
     private CategoryFilter _category;
     private WorldFilter _world;
@@ -22,7 +37,13 @@ public sealed class MainViewModel : INotifyPropertyChanged
     private string _search = "";
     private bool _manualMode;
     private int _characterIndex;
+    private RunChoice? _run;
+    private bool _userPickedRun;
     private string _status = "";
+    private string _runSummary = "";
+    private string _questStatus = "";
+    private bool _nothingLeft;
+    private bool _showRunView;
 
     public MainViewModel(Settings settings)
     {
@@ -40,6 +61,8 @@ public sealed class MainViewModel : INotifyPropertyChanged
 
     public ObservableCollection<ItemTileViewModel> Tiles { get; }
     public ICollectionView View { get; }
+    public ObservableCollection<RunNode> RunTree { get; } = [];
+    public ObservableCollection<RunChoice> Runs { get; } = [];
 
     public IReadOnlyList<CategoryFilter> Categories { get; } =
     [
@@ -67,10 +90,12 @@ public sealed class MainViewModel : INotifyPropertyChanged
         new("The Dark Horizon", "World_DLC3"),
     ];
 
-    public IReadOnlyList<string> ShowOptions { get; } = ["Missing", "Owned", "All"];
+    public IReadOnlyList<string> ShowOptions { get; } = ["Missing", "Available this run", "Needs quest", "Owned", "All"];
 
     public IReadOnlyList<string> CharacterNames =>
-        _characters.Select(c => $"Character {c.Index + 1}").ToList();
+        _characters.Count > 0
+            ? _characters.Select(c => $"{c.Index + 1}: {c.Description}").ToList()
+            : _fallbackInventories.Select(c => $"Character {c.Index + 1}").ToList();
 
     public CategoryFilter Category { get => _category; set { if (Set(ref _category, value)) Refresh(); } }
 
@@ -89,7 +114,22 @@ public sealed class MainViewModel : INotifyPropertyChanged
     public string Show { get => _show; set { if (Set(ref _show, value)) Refresh(); } }
     public string Search { get => _search; set { if (Set(ref _search, value)) Refresh(); } }
     public bool ManualMode { get => _manualMode; set => Set(ref _manualMode, value); }
+    public bool ShowRunView { get => _showRunView; set => Set(ref _showRunView, value); }
     public string Status { get => _status; private set => Set(ref _status, value); }
+    public string RunSummary { get => _runSummary; private set => Set(ref _runSummary, value); }
+    public string QuestStatus { get => _questStatus; private set => Set(ref _questStatus, value); }
+    public bool NothingLeft { get => _nothingLeft; private set => Set(ref _nothingLeft, value); }
+
+    public RunChoice? Run
+    {
+        get => _run;
+        set
+        {
+            if (value is null || !Set(ref _run, value)) return;
+            _userPickedRun = true;
+            ApplyCharacter();
+        }
+    }
 
     public int CharacterIndex
     {
@@ -98,6 +138,7 @@ public sealed class MainViewModel : INotifyPropertyChanged
         {
             if (value < 0 || !Set(ref _characterIndex, value)) return;
             _settings.CharacterIndex = value;
+            _userPickedRun = false;
             ApplyCharacter();
         }
     }
@@ -112,14 +153,13 @@ public sealed class MainViewModel : INotifyPropertyChanged
         }
     }
 
-    public string? ProfilePath => _settings.ProfilePath;
-
     public void LoadSave(string? path)
     {
         path ??= _settings.ProfilePath ?? FindDefaultProfile();
         if (path is null || !File.Exists(path))
         {
             _characters = [];
+            _fallbackInventories = [];
             Status = "No save found. Use Open save… or Manual mode.";
             ApplyCharacter();
             return;
@@ -127,18 +167,31 @@ public sealed class MainViewModel : INotifyPropertyChanged
 
         try
         {
-            _characters = ProfileReader.ReadFile(path);
+            // Full analysis: inventory plus rolled campaign/adventure worlds.
+            _characters = RunAnalysis.Analyze(Path.GetDirectoryName(Path.GetFullPath(path))!);
+            _fallbackInventories = [];
             _settings.ProfilePath = path;
             Status = $"Loaded {Path.GetFileName(path)} at {DateTime.Now:t}";
         }
-        catch (Exception e)
+        catch (Exception analysisError)
         {
-            // The game may be mid-write; keep the last good data.
-            Status = $"Could not read save: {e.Message}";
+            // The game may be mid-write, or a game patch may have changed the world save.
+            // Fall back to the simple inventory reader so owned/missing still works.
+            try
+            {
+                _fallbackInventories = ProfileReader.ReadFile(path);
+                _characters = [];
+                _settings.ProfilePath = path;
+                Status = $"Run info unavailable ({analysisError.Message}); showing inventory only.";
+            }
+            catch (Exception e)
+            {
+                Status = $"Could not read save: {e.Message}";
+            }
         }
 
         Changed(nameof(CharacterNames));
-        if (_characterIndex >= _characters.Count) _characterIndex = 0;
+        if (_characterIndex >= Math.Max(_characters.Count, _fallbackInventories.Count)) _characterIndex = 0;
         Changed(nameof(CharacterIndex));
         ApplyCharacter();
     }
@@ -147,11 +200,12 @@ public sealed class MainViewModel : INotifyPropertyChanged
     {
         if (!_manualMode) return;
         var overrides = OverridesForCharacter();
+        bool ownedInSave = tile.Status == RunItemStatus.Owned;
 
         // Cycle: follow save -> opposite of save -> follow save.
         if (tile.ManualOverride is null)
         {
-            tile.ManualOverride = !tile.OwnedInSave;
+            tile.ManualOverride = !ownedInSave;
             overrides[tile.Item.AssetName] = tile.ManualOverride.Value;
         }
         else
@@ -161,6 +215,7 @@ public sealed class MainViewModel : INotifyPropertyChanged
         }
 
         Refresh();
+        BuildRunTree();
     }
 
     public void ClearManual()
@@ -168,19 +223,152 @@ public sealed class MainViewModel : INotifyPropertyChanged
         OverridesForCharacter().Clear();
         foreach (var t in Tiles) t.ManualOverride = null;
         Refresh();
+        BuildRunTree();
     }
+
+    private CharacterRuns? CurrentCharacter => _characterIndex < _characters.Count ? _characters[_characterIndex] : null;
+
+    private RunInfo? CurrentRun => _run is null ? null : CurrentCharacter?.Get(_run.Slot);
 
     private void ApplyCharacter()
     {
-        var character = _characterIndex < _characters.Count ? _characters[_characterIndex] : null;
-        var owned = character?.Items.Select(i => i.AssetName).ToHashSet() ?? [];
+        var character = CurrentCharacter;
+        UpdateRunChoices(character);
+        var run = CurrentRun;
+
+        if (character is not null && run is not null)
+        {
+            var byId = RunAnalysis.Evaluate(_db, character, run).ToDictionary(s => s.Item.AssetName);
+            foreach (var t in Tiles)
+            {
+                var s = byId[t.Item.AssetName];
+                t.SetStatus(s.Status, s.Reason, s.Where);
+            }
+        }
+        else
+        {
+            // Inventory-only (fallback reader) or no save at all.
+            var inventory = _characterIndex < _fallbackInventories.Count ? _fallbackInventories[_characterIndex] : null;
+            var owned = inventory?.Items.Select(i => i.AssetName).ToHashSet() ?? [];
+            foreach (var t in Tiles)
+            {
+                bool has = owned.Contains(t.Item.AssetName);
+                t.SetStatus(has ? RunItemStatus.Owned : RunItemStatus.Unknown, has ? "Owned" : "Run info unavailable", null);
+            }
+        }
+
         var overrides = OverridesForCharacter();
         foreach (var t in Tiles)
-        {
-            t.OwnedInSave = owned.Contains(t.Item.AssetName);
             t.ManualOverride = overrides.TryGetValue(t.Item.AssetName, out bool o) ? o : null;
-        }
+
         Refresh();
+        BuildRunTree();
+    }
+
+    private void UpdateRunChoices(CharacterRuns? character)
+    {
+        var choices = new List<RunChoice>();
+        if (character is not null)
+        {
+            foreach (var run in new[] { character.Campaign, character.Adventure })
+            {
+                if (run is null) continue;
+                string worlds = string.Join(", ", run.Zones.Where(z => z.World != "Ward 13").Select(z => z.World));
+                string active = run.Slot == character.ActiveSlot ? " (playing)" : "";
+                choices.Add(new RunChoice($"{run.Slot}{active}: {worlds}", run.Slot));
+            }
+        }
+
+        // Keep the user's pick when the save reloads; otherwise follow the run being played.
+        var wanted = _userPickedRun && _run is not null ? _run.Slot : character?.ActiveSlot;
+        Runs.Clear();
+        foreach (var c in choices) Runs.Add(c);
+        _run = choices.FirstOrDefault(c => c.Slot == wanted) ?? choices.FirstOrDefault();
+        Changed(nameof(Run));
+    }
+
+    private void BuildRunTree()
+    {
+        RunTree.Clear();
+        var run = CurrentRun;
+        if (run is null)
+        {
+            RunSummary = _manualMode || _characters.Count == 0
+                ? "No run detected. Pick the world you rolled in the world filter."
+                : "";
+            QuestStatus = "";
+            NothingLeft = false;
+            return;
+        }
+
+        // Missing tracked items by db Id, after manual overrides.
+        var tilesById = Tiles.ToDictionary(t => t.Item.Id);
+        bool Wanted(RunItem item) => tilesById.TryGetValue(item.Id, out var t) && !t.Owned && Collectable.Contains(item.Status);
+
+        int available = 0, gated = 0;
+        foreach (var zone in run.Zones)
+        {
+            var locationNodes = new List<RunNode>();
+            foreach (var location in zone.Locations)
+            {
+                var sourceNodes = new List<RunNode>();
+                foreach (var source in location.Sources)
+                {
+                    var items = source.Items.Where(Wanted).ToList();
+                    if (items.Count == 0) continue;
+                    available += items.Count(i => i.Status == RunItemStatus.Available);
+                    gated += items.Count(i => i.Status == RunItemStatus.NeedsPrerequisite);
+                    sourceNodes.Add(new RunNode
+                    {
+                        Title = source.Name == location.Name ? "Around the area" : source.Name,
+                        Detail = source.Name == location.Name ? null : source.Kind,
+                        IsExpanded = true,
+                        Children = items.Select(i => new RunNode
+                        {
+                            Title = i.Name,
+                            Detail = i.Status switch
+                            {
+                                RunItemStatus.NeedsPrerequisite => $"needs {i.Prerequisite ?? "a quest step"}",
+                                RunItemStatus.MissedThisRun => "already taken or skipped this run",
+                                _ => i.HasRequiredMaterial ? "ready to craft" : null,
+                            },
+                            Status = i.Status,
+                        }).ToList(),
+                    });
+                }
+
+                int count = sourceNodes.Sum(s => s.Children.Count(c => c.Status != RunItemStatus.MissedThisRun));
+                string stones = location.WorldStones.Count > 0 ? $"  ·  stones: {string.Join(", ", location.WorldStones)}" : "";
+                locationNodes.Add(new RunNode
+                {
+                    Title = location.Name,
+                    Detail = (count == 0 ? "nothing new" : $"{count} to collect") + stones,
+                    IsExpanded = count > 0,
+                    Children = sourceNodes,
+                });
+            }
+
+            int zoneCount = locationNodes.Sum(l => l.Children.Sum(s => s.Children.Count(c => c.Status != RunItemStatus.MissedThisRun)));
+            string story = zone.World == "Ward 13" ? "" : $"{zone.Story}: {(zone.StoryFinished ? "story done" : "story in progress")}  ·  ";
+            RunTree.Add(new RunNode
+            {
+                Title = zone.World,
+                Detail = story + (zoneCount == 0 ? "nothing new" : $"{zoneCount} to collect"),
+                IsExpanded = zoneCount > 0 && zone.World != "Ward 13",
+                Children = locationNodes,
+            });
+        }
+
+        NothingLeft = available == 0 && gated == 0;
+        RunSummary = NothingLeft
+            ? $"Nothing new to collect in this {run.Slot.ToString().ToLowerInvariant()}. Time to reroll."
+            : $"{run.Slot} ({run.Difficulty}): {available} available now, {gated} need a quest or unlock first.";
+
+        var questLines = run.Zones.Where(z => z.World != "Ward 13")
+            .Select(z => $"{z.World}: {z.Story} ({(z.StoryFinished ? "done" : "in progress")})").ToList();
+        if (run.QuestItems.Count > 0) questLines.Add($"Quest items held: {string.Join(", ", run.QuestItems)}");
+        if (run.RespawnPoint is not null) questLines.Add($"Last checkpoint: {run.RespawnPoint}");
+        QuestStatus = string.Join(Environment.NewLine, questLines);
     }
 
     private Dictionary<string, bool> OverridesForCharacter()
@@ -194,11 +382,19 @@ public sealed class MainViewModel : INotifyPropertyChanged
     {
         if (!_category.Categories.Contains(t.Item.Category!.Value)) return false;
         if (_world.World is not null && t.Item.World != _world.World) return false;
-        if (_show == "Missing" && t.Owned) return false;
-        if (_show == "Owned" && !t.Owned) return false;
+        bool show = _show switch
+        {
+            "Missing" => !t.Owned,
+            "Available this run" => !t.Owned && t.Status == RunItemStatus.Available,
+            "Needs quest" => !t.Owned && t.Status == RunItemStatus.NeedsPrerequisite,
+            "Owned" => t.Owned,
+            _ => true,
+        };
+        if (!show) return false;
         return _search.Length == 0
                || t.Name.Contains(_search, StringComparison.OrdinalIgnoreCase)
-               || (t.Item.DropReference?.Contains(_search, StringComparison.OrdinalIgnoreCase) ?? false);
+               || (t.Item.DropReference?.Contains(_search, StringComparison.OrdinalIgnoreCase) ?? false)
+               || (t.Where?.Contains(_search, StringComparison.OrdinalIgnoreCase) ?? false);
     }
 
     private void Refresh()

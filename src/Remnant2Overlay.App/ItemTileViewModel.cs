@@ -9,7 +9,9 @@ namespace Remnant2Overlay.App;
 
 public sealed class ItemTileViewModel : INotifyPropertyChanged
 {
-    private bool _ownedInSave;
+    private RunItemStatus _status = RunItemStatus.Unknown;
+    private string _reason = "";
+    private string? _where;
     private bool? _manualOverride;
 
     public ItemTileViewModel(ItemInfo item, string iconDir)
@@ -29,18 +31,31 @@ public sealed class ItemTileViewModel : INotifyPropertyChanged
     {
         get
         {
-            var lines = new List<string> { Name, $"{CategoryName} · {Item.WorldName}" };
-            if (Item.DropType is not null) lines.Add($"{Item.DropType}: {Item.DropReference}");
+            var lines = new List<string> { Name, $"{CategoryName} · {Item.WorldName}", "", _reason };
+            if (_where is not null) lines.Add(_where);
+            if (Item.DropType is not null) lines.Add($"Source: {Item.DropType} – {Item.DropReference}");
             if (Item.Note is not null) lines.Add(Item.Note);
-            if (_manualOverride is not null) lines.Add("(set manually)");
+            if (_manualOverride is not null) lines.Add("(marked manually)");
             return string.Join(Environment.NewLine, lines);
         }
     }
 
-    public bool OwnedInSave
+    /// <summary>Status from the save for the selected run.</summary>
+    public RunItemStatus Status => _status;
+    public string Reason => _reason;
+    public string? Where => _where;
+
+    public void SetStatus(RunItemStatus status, string reason, string? where)
     {
-        get => _ownedInSave;
-        set { if (Set(ref _ownedInSave, value)) Changed(nameof(Owned)); }
+        _status = status;
+        _reason = reason;
+        _where = where;
+        Changed(nameof(Status));
+        Changed(nameof(Reason));
+        Changed(nameof(Where));
+        Changed(nameof(Owned));
+        Changed(nameof(DisplayStatus));
+        Changed(nameof(Tooltip));
     }
 
     /// <summary>Manual mode override. Null means "use the save".</summary>
@@ -49,15 +64,26 @@ public sealed class ItemTileViewModel : INotifyPropertyChanged
         get => _manualOverride;
         set
         {
-            if (!Set(ref _manualOverride, value)) return;
+            if (_manualOverride == value) return;
+            _manualOverride = value;
+            Changed(nameof(ManualOverride));
             Changed(nameof(Owned));
             Changed(nameof(IsManual));
+            Changed(nameof(DisplayStatus));
             Changed(nameof(Tooltip));
         }
     }
 
     public bool IsManual => _manualOverride is not null;
-    public bool Owned => _manualOverride ?? _ownedInSave;
+    public bool Owned => _manualOverride ?? _status == RunItemStatus.Owned;
+
+    /// <summary>Status used for highlighting, after manual overrides.</summary>
+    public RunItemStatus DisplayStatus => _manualOverride switch
+    {
+        true => RunItemStatus.Owned,
+        false when _status == RunItemStatus.Owned => RunItemStatus.Unknown,
+        _ => _status,
+    };
 
     private static ImageSource? LoadIcon(string path)
     {
@@ -81,13 +107,5 @@ public sealed class ItemTileViewModel : INotifyPropertyChanged
 
     public event PropertyChangedEventHandler? PropertyChanged;
 
-    private void Changed(string name) => PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(name));
-
-    private bool Set<T>(ref T field, T value, [CallerMemberName] string? name = null)
-    {
-        if (EqualityComparer<T>.Default.Equals(field, value)) return false;
-        field = value;
-        Changed(name!);
-        return true;
-    }
+    private void Changed([CallerMemberName] string? name = null) => PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(name));
 }

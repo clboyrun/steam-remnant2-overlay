@@ -139,3 +139,69 @@ public class ItemDatabaseTests
         Assert.True(entries.Single(e => e.Item.AssetName == "Ring_AkariWarBand").Owned);
     }
 }
+
+public class RunAnalysisTests
+{
+    private static readonly ItemDatabase Db = ItemDatabase.LoadEmbedded();
+
+    private static RunItem Item(string id, RunItemStatus status, string? prerequisite = null) =>
+        new(id, id, Db.Items.First(i => i.Id == id).Type, status, prerequisite, false);
+
+    private static CharacterRuns Character(RunInfo run, params string[] ownedIds) => new(
+        0, "Test", Db.Items.Where(i => ownedIds.Contains(i.Id)).Select(i => i.ProfileId).ToHashSet(),
+        lib.remnant2.analyzer.Enums.WorldSlot.Adventure, run, run, []);
+
+    private static RunInfo Run(params RunItem[] items) => new(
+        lib.remnant2.analyzer.Enums.WorldSlot.Adventure, "Survivor", null,
+        [new RunZone("Losomn", "The One True King", false,
+            [new RunLocation("Forlorn Coast", [], [new RunSource("Forlorn Coast", "Location", items)])])],
+        []);
+
+    [Fact]
+    public void Evaluate_ClassifiesEachItem()
+    {
+        var run = Run(
+            Item("Ring_AkariWarBand", RunItemStatus.Available),
+            Item("Weapon_Monarch", RunItemStatus.NeedsPrerequisite, "Crown of the Red Prince"),
+            Item("Weapon_Wrathbringer", RunItemStatus.MissedThisRun));
+        var character = Character(run, "Ring_AkariWarBand");
+
+        var statuses = RunAnalysis.Evaluate(Db, character, run).ToDictionary(s => s.Item.Id);
+
+        Assert.Equal(RunItemStatus.Owned, statuses["Ring_AkariWarBand"].Status);
+        Assert.Equal(RunItemStatus.NeedsPrerequisite, statuses["Weapon_Monarch"].Status);
+        Assert.Contains("Crown of the Red Prince", statuses["Weapon_Monarch"].Reason);
+        Assert.Equal(RunItemStatus.MissedThisRun, statuses["Weapon_Wrathbringer"].Status);
+
+        // Losomn is in the run, so a Losomn item that isn't listed simply didn't roll.
+        var otherLosomn = statuses.Values.First(s => s.Item.World == "World_Fae" && s.Status != RunItemStatus.Owned
+                                                     && s.Item.Id is not ("Weapon_Monarch" or "Weapon_Wrathbringer"));
+        Assert.Equal(RunItemStatus.NotRolled, otherLosomn.Status);
+        Assert.Contains(statuses.Values, s => s.Item.World == "World_Jungle" && s.Status == RunItemStatus.WorldNotInRun);
+    }
+
+    [Fact]
+    public void Evaluate_PrefersAvailableOccurrence()
+    {
+        var run = Run(Item("Ring_AkariWarBand", RunItemStatus.MissedThisRun), Item("Ring_AkariWarBand", RunItemStatus.Available));
+
+        var status = RunAnalysis.Evaluate(Db, Character(run), run).Single(s => s.Item.Id == "Ring_AkariWarBand");
+
+        Assert.Equal(RunItemStatus.Available, status.Status);
+    }
+
+    [Fact]
+    public void Analyze_RealSaves_WhenAvailable()
+    {
+        // Set REMNANT2_PROFILE to a copy of profile.sav with its save_N.sav files next to it.
+        string? path = Environment.GetEnvironmentVariable("REMNANT2_PROFILE");
+        if (string.IsNullOrEmpty(path) || !File.Exists(path)) return;
+
+        var characters = RunAnalysis.Analyze(Path.GetDirectoryName(Path.GetFullPath(path))!);
+
+        Assert.NotEmpty(characters);
+        var run = characters[0].Get(characters[0].ActiveSlot)!;
+        Assert.Contains(run.Zones, z => z.World != "Ward 13");
+        Assert.Contains(RunAnalysis.Evaluate(Db, characters[0], run), s => s.Status == RunItemStatus.Available);
+    }
+}

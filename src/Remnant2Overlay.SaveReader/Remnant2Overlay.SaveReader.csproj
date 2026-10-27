@@ -10,4 +10,8 @@
     <EmbeddedResource Include="Data\items.json" LogicalName="Remnant2Overlay.Items.json" />
   </ItemGroup>
 
+  <ItemGroup>
+    <PackageReference Include="lib.remnant2.analyzer" Version="2.0.4" />
+  </ItemGroup>
+
 </Project>

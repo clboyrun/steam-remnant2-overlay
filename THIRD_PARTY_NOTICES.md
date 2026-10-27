@@ -2,7 +2,8 @@
 
 ## lib.remnant2.analyzer
 
-`src/Remnant2Overlay.SaveReader/Data/items.json` is derived from `db.json` in
+The NuGet packages `lib.remnant2.analyzer` and `lib.remnant2.saves` (same author, same MIT license) are used
+to read rolled worlds and quest state. `src/Remnant2Overlay.SaveReader/Data/items.json` is derived from `db.json` in
 [lib.remnant2.analyzer](https://github.com/AndrewSav/lib.remnant2.analyzer)
 (commit ce4e68a8812d48756a2cfe4ca9814ba4e9b750f5), used under the MIT License:
 

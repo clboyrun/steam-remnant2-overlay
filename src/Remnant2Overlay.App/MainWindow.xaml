@@ -2,6 +2,7 @@
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:local="clr-namespace:Remnant2Overlay.App"
+        xmlns:sr="clr-namespace:Remnant2Overlay.SaveReader;assembly=Remnant2Overlay.SaveReader"
         Title="Remnant 2 Overlay"
         WindowStyle="None" AllowsTransparency="True" Background="Transparent"
         Topmost="True" ResizeMode="CanResizeWithGrip"
@@ -15,6 +16,10 @@
         <SolidColorBrush x:Key="OwnedBrush" Color="#5FAF6A" />
         <SolidColorBrush x:Key="MissingBrush" Color="#D2553F" />
         <SolidColorBrush x:Key="Muted" Color="#9A9286" />
+        <SolidColorBrush x:Key="AvailableBrush" Color="#E0B54A" />
+        <SolidColorBrush x:Key="QuestBrush" Color="#9C7BD9" />
+        <SolidColorBrush x:Key="NotHereBrush" Color="#4A453E" />
+        <BooleanToVisibilityConverter x:Key="BoolToVis" />
 
         <Style TargetType="ComboBox">
             <Setter Property="Margin" Value="0,0,6,0" />
@@ -47,7 +52,7 @@
         <DataTemplate x:Key="TileTemplate" DataType="{x:Type local:ItemTileViewModel}">
             <Border x:Name="Tile" Width="96" Height="118" Margin="4" CornerRadius="6"
                     Background="{StaticResource PanelLight}" BorderThickness="2"
-                    BorderBrush="{StaticResource MissingBrush}" ToolTip="{Binding Tooltip}"
+                    BorderBrush="{StaticResource NotHereBrush}" ToolTip="{Binding Tooltip}"
                     Cursor="Hand" MouseLeftButtonUp="Tile_Click">
                 <Grid>
                     <Grid.RowDefinitions>
@@ -76,8 +81,17 @@
                 </Grid>
             </Border>
             <DataTemplate.Triggers>
-                <DataTrigger Binding="{Binding Owned}" Value="True">
+                <DataTrigger Binding="{Binding DisplayStatus}" Value="{x:Static sr:RunItemStatus.Owned}">
                     <Setter TargetName="Tile" Property="BorderBrush" Value="{StaticResource OwnedBrush}" />
+                </DataTrigger>
+                <DataTrigger Binding="{Binding DisplayStatus}" Value="{x:Static sr:RunItemStatus.Available}">
+                    <Setter TargetName="Tile" Property="BorderBrush" Value="{StaticResource AvailableBrush}" />
+                </DataTrigger>
+                <DataTrigger Binding="{Binding DisplayStatus}" Value="{x:Static sr:RunItemStatus.NeedsPrerequisite}">
+                    <Setter TargetName="Tile" Property="BorderBrush" Value="{StaticResource QuestBrush}" />
+                </DataTrigger>
+                <DataTrigger Binding="{Binding DisplayStatus}" Value="{x:Static sr:RunItemStatus.MissedThisRun}">
+                    <Setter TargetName="Tile" Property="BorderBrush" Value="{StaticResource MissingBrush}" />
                 </DataTrigger>
                 <DataTrigger Binding="{Binding Owned}" Value="False">
                     <Setter TargetName="Art" Property="Opacity" Value="0.45" />
@@ -119,6 +133,46 @@
                          ToolTip="Search by item name or where it drops" />
             </WrapPanel>
 
+            <!-- Run: which roll, summary banner, quest status -->
+            <StackPanel DockPanel.Dock="Top" Margin="0,0,0,8">
+                <WrapPanel>
+                    <ComboBox ItemsSource="{Binding Runs}" SelectedItem="{Binding Run}" DisplayMemberPath="Label" MinWidth="220"
+                              ToolTip="Campaign or adventure to plan for" />
+                    <ToggleButton Content="Run map" IsChecked="{Binding ShowRunView}" Padding="10,2"
+                                  ToolTip="Show the rolled worlds, locations and drop sources" />
+                </WrapPanel>
+                <Border Margin="0,6,0,0" Padding="8,5" CornerRadius="4">
+                    <Border.Style>
+                        <Style TargetType="Border">
+                            <Setter Property="Background" Value="#2E2A22" />
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding NothingLeft}" Value="True">
+                                    <Setter Property="Background" Value="#4A2420" />
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </Border.Style>
+                    <TextBlock Text="{Binding RunSummary}" TextWrapping="Wrap" />
+                </Border>
+                <TextBlock Text="{Binding QuestStatus}" Foreground="{StaticResource Muted}" FontSize="11" Margin="2,4,0,0"
+                           TextWrapping="Wrap" />
+            </StackPanel>
+
+            <!-- Legend -->
+            <WrapPanel DockPanel.Dock="Top" Margin="0,0,0,6">
+                <WrapPanel.Resources>
+                    <Style TargetType="TextBlock">
+                        <Setter Property="FontSize" Value="11" />
+                        <Setter Property="Margin" Value="0,0,12,0" />
+                    </Style>
+                </WrapPanel.Resources>
+                <TextBlock Text="■ owned" Foreground="{StaticResource OwnedBrush}" />
+                <TextBlock Text="■ available this run" Foreground="{StaticResource AvailableBrush}" />
+                <TextBlock Text="■ needs quest/unlock" Foreground="{StaticResource QuestBrush}" />
+                <TextBlock Text="■ missed this run" Foreground="{StaticResource MissingBrush}" />
+                <TextBlock Text="■ not in this run" Foreground="{StaticResource Muted}" />
+            </WrapPanel>
+
             <!-- Status bar -->
             <DockPanel DockPanel.Dock="Bottom" Margin="0,8,0,0">
                 <StackPanel Orientation="Horizontal" DockPanel.Dock="Right" Margin="0,0,14,0">
@@ -132,7 +186,51 @@
                            TextTrimming="CharacterEllipsis" />
             </DockPanel>
 
+            <Grid>
+            <TreeView ItemsSource="{Binding RunTree}" Background="Transparent" BorderThickness="0"
+                      Visibility="{Binding ShowRunView, Converter={StaticResource BoolToVis}}">
+                <TreeView.ItemContainerStyle>
+                    <Style TargetType="TreeViewItem">
+                        <Setter Property="IsExpanded" Value="{Binding IsExpanded, Mode=TwoWay}" />
+                        <Setter Property="Foreground" Value="#E8E2D6" />
+                    </Style>
+                </TreeView.ItemContainerStyle>
+                <TreeView.ItemTemplate>
+                    <HierarchicalDataTemplate DataType="{x:Type local:RunNode}" ItemsSource="{Binding Children}">
+                        <StackPanel Orientation="Horizontal" Margin="0,1">
+                            <TextBlock x:Name="Dot" Text="● " Visibility="Collapsed" />
+                            <TextBlock Text="{Binding Title}" Foreground="#E8E2D6" />
+                            <TextBlock Text="{Binding Detail}" Foreground="{StaticResource Muted}" Margin="8,0,0,0" FontSize="11"
+                                       VerticalAlignment="Center" />
+                        </StackPanel>
+                        <HierarchicalDataTemplate.Triggers>
+                            <DataTrigger Binding="{Binding Status}" Value="{x:Static sr:RunItemStatus.Available}">
+                                <Setter TargetName="Dot" Property="Visibility" Value="Visible" />
+                                <Setter TargetName="Dot" Property="Foreground" Value="{StaticResource AvailableBrush}" />
+                            </DataTrigger>
+                            <DataTrigger Binding="{Binding Status}" Value="{x:Static sr:RunItemStatus.NeedsPrerequisite}">
+                                <Setter TargetName="Dot" Property="Visibility" Value="Visible" />
+                                <Setter TargetName="Dot" Property="Foreground" Value="{StaticResource QuestBrush}" />
+                            </DataTrigger>
+                            <DataTrigger Binding="{Binding Status}" Value="{x:Static sr:RunItemStatus.MissedThisRun}">
+                                <Setter TargetName="Dot" Property="Visibility" Value="Visible" />
+                                <Setter TargetName="Dot" Property="Foreground" Value="{StaticResource MissingBrush}" />
+                            </DataTrigger>
+                        </HierarchicalDataTemplate.Triggers>
+                    </HierarchicalDataTemplate>
+                </TreeView.ItemTemplate>
+            </TreeView>
+
             <ScrollViewer VerticalScrollBarVisibility="Auto">
+                <ScrollViewer.Style>
+                    <Style TargetType="ScrollViewer">
+                        <Style.Triggers>
+                            <DataTrigger Binding="{Binding ShowRunView}" Value="True">
+                                <Setter Property="Visibility" Value="Collapsed" />
+                            </DataTrigger>
+                        </Style.Triggers>
+                    </Style>
+                </ScrollViewer.Style>
                 <ItemsControl ItemsSource="{Binding View}" ItemTemplate="{StaticResource TileTemplate}">
                     <ItemsControl.ItemsPanel>
                         <ItemsPanelTemplate>
@@ -141,6 +239,7 @@
                     </ItemsControl.ItemsPanel>
                 </ItemsControl>
             </ScrollViewer>
+            </Grid>
         </DockPanel>
     </Border>
 </Window>
