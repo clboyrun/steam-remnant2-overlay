@@ -1,0 +1,38 @@
+<Project Sdk="Microsoft.NET.Sdk.BlazorWebAssembly">
+
+  <!-- Phone companion: a Blazor WebAssembly app installable to the home screen (PWA). It signs in with Google in
+       the browser and reads/writes the same Drive app data file as the overlay. -->
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <OverrideHtmlAssetPlaceholders>true</OverrideHtmlAssetPlaceholders>
+    <ServiceWorkerAssetsManifest>service-worker-assets.js</ServiceWorkerAssetsManifest>
+    <BlazorWebAssemblyLoadAllGlobalizationData>false</BlazorWebAssemblyLoadAllGlobalizationData>
+    <InvariantGlobalization>true</InvariantGlobalization>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly" Version="10.0.13" />
+    <PackageReference Include="Microsoft.AspNetCore.Components.WebAssembly.DevServer" Version="10.0.13" PrivateAssets="all" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Remnant2Overlay.Sync\Remnant2Overlay.Sync.csproj" />
+  </ItemGroup>
+
+  <!-- The item list and its model, shared with the overlay. Linked rather than referencing the SaveReader project,
+       which would pull the save analyzer and its dependencies into the phone download. -->
+  <ItemGroup>
+    <Compile Include="..\Remnant2Overlay.SaveReader\ItemDatabase.cs" Link="Shared\ItemDatabase.cs" />
+    <Compile Include="..\Remnant2Overlay.SaveReader\ItemCategory.cs" Link="Shared\ItemCategory.cs" />
+    <Compile Include="..\Remnant2Overlay.SaveReader\ProfileReader.cs" Link="Shared\ProfileReader.cs" />
+    <Compile Include="..\Remnant2Overlay.SaveReader\SaveFile.cs" Link="Shared\SaveFile.cs" />
+    <EmbeddedResource Include="..\Remnant2Overlay.SaveReader\Data\items.json" LogicalName="Remnant2Overlay.Items.json" Link="Shared\items.json" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ServiceWorker Include="wwwroot\service-worker.js" PublishedContent="wwwroot\service-worker.published.js" />
+  </ItemGroup>
+
+</Project>

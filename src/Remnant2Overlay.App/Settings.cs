@@ -35,6 +35,16 @@ public sealed class Settings
     /// <summary>World picked in manual mode as the rolled adventure (e.g. World_Fae), or null for all.</summary>
     public string? AdventureWorld { get; set; }
 
+    /// <summary>
+    /// When each manual mark was last set or cleared, per character index, and when the adventure pick last changed.
+    /// The phone sync uses these to merge changes made on both sides.
+    /// </summary>
+    public Dictionary<int, Dictionary<string, DateTimeOffset>> ManualOverrideTimes { get; set; } = [];
+    public DateTimeOffset? AdventureWorldChangedAt { get; set; }
+
+    /// <summary>Sync with the phone app through Google Drive (signed in on this PC).</summary>
+    public bool PhoneSync { get; set; }
+
     public static Settings Load()
     {
         try

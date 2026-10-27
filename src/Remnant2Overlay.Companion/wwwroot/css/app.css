@@ -1,0 +1,133 @@
+:root {
+    --bg: #14161a;
+    --panel: #1d2026;
+    --line: #2c3038;
+    --text: #e8e8e8;
+    --muted: #9aa0a8;
+    --owned: #4caf6a;
+    --available: #d6aa4a;
+    --quest: #a77bd6;
+    --missed: #d65a5a;
+    --accent: #d6aa4a;
+    color-scheme: dark;
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font: 15px/1.4 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+}
+
+main {
+    max-width: 760px;
+    margin: 0 auto;
+    padding: 12px 16px calc(32px + env(safe-area-inset-bottom));
+}
+
+.bar {
+    position: sticky;
+    top: 0;
+    z-index: 2;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: calc(10px + env(safe-area-inset-top)) 16px 10px;
+    background: var(--bg);
+    border-bottom: 1px solid var(--line);
+}
+
+h1 { font-size: 17px; margin: 0; }
+h2 { font-size: 16px; margin: 0 0 8px; }
+p { margin: 6px 0; }
+a { color: var(--accent); }
+
+button, select, input {
+    font: inherit;
+    color: var(--text);
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    padding: 8px 12px;
+    min-height: 40px;
+}
+
+button { cursor: pointer; }
+button:disabled { opacity: .5; }
+button.primary { background: var(--accent); border-color: var(--accent); color: #14161a; font-weight: 600; }
+
+.wide { width: 100%; margin: 8px 0; }
+.muted { color: var(--muted); }
+.small { font-size: 12.5px; }
+.status { color: var(--muted); font-size: 13px; }
+
+.card { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 14px; margin: 12px 0; }
+
+.pickers, .row { display: flex; gap: 8px; flex-wrap: wrap; margin: 8px 0; }
+.pickers select, .row select, .row input[type=search] { flex: 1 1 160px; min-width: 0; }
+
+.banner { border-left: 4px solid var(--available); background: var(--panel); padding: 10px 12px; border-radius: 8px; margin: 10px 0; }
+.banner.done { border-left-color: var(--owned); }
+
+.tabs { display: flex; gap: 6px; margin: 12px 0; }
+.tabs button { flex: 1; }
+.tabs button.on, .chip.on { background: var(--accent); border-color: var(--accent); color: #14161a; font-weight: 600; }
+
+.chips { display: flex; gap: 6px; overflow-x: auto; padding-bottom: 4px; }
+.chip { min-height: 34px; padding: 4px 12px; border-radius: 17px; white-space: nowrap; }
+.toggle { display: flex; align-items: center; gap: 6px; padding: 0 6px; }
+.toggle input { min-height: 0; width: 20px; height: 20px; }
+
+details { border-bottom: 1px solid var(--line); }
+details > summary { list-style: none; cursor: pointer; padding: 10px 2px; display: flex; flex-direction: column; }
+details > summary::-webkit-details-marker { display: none; }
+details > summary .title::before { content: "▸ "; color: var(--muted); }
+details[open] > summary .title::before { content: "▾ "; }
+.zone > summary .title { font-weight: 600; }
+.location { margin-left: 12px; }
+.source { margin: 0 0 10px 24px; }
+.source-name { font-weight: 500; margin-bottom: 4px; }
+
+.run-item {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    width: 100%;
+    text-align: left;
+    margin: 4px 0;
+    border-left-width: 4px;
+}
+
+.items { list-style: none; margin: 0; padding: 0; }
+.item { border: 1px solid var(--line); border-left-width: 4px; border-radius: 8px; margin: 6px 0; background: var(--panel); }
+.item:not(.owned) .name { opacity: .9; }
+.item-head { display: flex; flex-direction: column; align-items: flex-start; width: 100%; text-align: left; border: 0; background: none; }
+.item-detail { padding: 0 12px 10px; font-size: 14px; }
+
+.s-owned { border-left-color: var(--owned); color: var(--owned); }
+.s-available { border-left-color: var(--available); color: var(--available); }
+.s-quest { border-left-color: var(--quest); color: var(--quest); }
+.s-missed { border-left-color: var(--missed); color: var(--missed); }
+.s-other { border-left-color: var(--line); }
+.item.s-owned, .item.s-available, .item.s-quest, .item.s-missed, .run-item { color: var(--text); }
+
+footer { margin-top: 24px; text-align: center; }
+
+.loading { padding: 40px; text-align: center; color: var(--muted); font: 15px system-ui, sans-serif; }
+
+#blazor-error-ui {
+    display: none;
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    z-index: 10;
+    padding: 12px 16px;
+    background: #5a1e1e;
+    color: #fff;
+}
+#blazor-error-ui .reload { color: #fff; margin-left: 8px; }
+#blazor-error-ui .dismiss { float: right; cursor: pointer; }

@@ -21,6 +21,12 @@ public partial class MainWindow : Window
     private readonly DispatcherTimer _reloadDebounce = new() { Interval = TimeSpan.FromSeconds(1.5) };
     private FileSystemWatcher? _watcher;
 
+    // Phone sync: upload a few seconds after a change settles, and check for the phone's changes every minute.
+    private readonly PhoneSync _phoneSync = new();
+    private readonly DispatcherTimer _syncDebounce = new() { Interval = TimeSpan.FromSeconds(3) };
+    private readonly DispatcherTimer _syncPoll = new() { Interval = TimeSpan.FromMinutes(1) };
+    private bool _syncing, _syncAgain;
+
     public MainWindow()
     {
         InitializeComponent();
@@ -42,10 +48,115 @@ public partial class MainWindow : Window
             _vm.LoadSave(_settings.ProfilePath);
         };
 
+        _syncDebounce.Tick += (_, _) =>
+        {
+            _syncDebounce.Stop();
+            _ = SyncPhoneAsync();
+        };
+        _syncPoll.Tick += (_, _) => _ = SyncPhoneAsync();
+        _vm.SyncNeeded += () =>
+        {
+            if (!_phoneSync.SignedIn) return;
+            _syncDebounce.Stop();
+            _syncDebounce.Start();
+        };
+
         _vm.LoadSave(null);
         WatchSave();
-        // Fill in any icons missing from the local cache; runs in the background.
-        Loaded += (_, _) => _ = _vm.SyncIconsAsync();
+        Loaded += (_, _) =>
+        {
+            // Fill in any icons missing from the local cache; runs in the background.
+            _ = _vm.SyncIconsAsync();
+            if (_settings.PhoneSync) _ = StartPhoneSyncAsync();
+        };
+    }
+
+    private async Task StartPhoneSyncAsync()
+    {
+        if (!PhoneSync.HasClientFile)
+        {
+            _vm.SyncStatus = $"Phone sync: Google client file missing ({PhoneSync.ClientFile}). See README.";
+            PhoneSyncToggle.IsChecked = false;
+            return;
+        }
+
+        try
+        {
+            _vm.SyncStatus = "Phone sync: signing in with Google (check your browser)…";
+            using var timeout = new CancellationTokenSource(TimeSpan.FromMinutes(5));
+            await _phoneSync.SignInAsync(timeout.Token);
+            _settings.PhoneSync = true;
+            PhoneSyncToggle.IsChecked = true;
+            _syncPoll.Start();
+            await SyncPhoneAsync();
+        }
+        catch (Exception e)
+        {
+            _vm.SyncStatus = $"Phone sync: sign-in failed ({e.Message})";
+            PhoneSyncToggle.IsChecked = false;
+        }
+    }
+
+    private async Task SyncPhoneAsync()
+    {
+        if (!_phoneSync.SignedIn) return;
+        // One round trip at a time; a change during a sync gets its own pass afterwards.
+        if (_syncing)
+        {
+            _syncAgain = true;
+            return;
+        }
+
+        _syncing = true;
+        try
+        {
+            do
+            {
+                _syncAgain = false;
+                var merged = await _phoneSync.SyncAsync(_vm.BuildSyncDocument());
+                _vm.ApplySynced(merged);
+                _vm.SyncStatus = $"Phone sync: up to date at {DateTime.Now:t}";
+            } while (_syncAgain);
+        }
+        catch (Remnant2Overlay.Sync.DriveSyncException e) when (e.NeedsSignIn)
+        {
+            _vm.SyncStatus = "Phone sync: Google sign-in expired or was revoked. Turn Phone sync off and on to sign in again.";
+        }
+        catch (Exception e)
+        {
+            // Offline or Drive hiccup: the next change or the minute timer tries again.
+            _vm.SyncStatus = $"Phone sync failed at {DateTime.Now:t}: {e.Message}";
+        }
+        finally
+        {
+            _syncing = false;
+        }
+    }
+
+    private async void PhoneSync_Click(object sender, RoutedEventArgs e)
+    {
+        if (PhoneSyncToggle.IsChecked == true)
+        {
+            if (!PhoneSync.HasClientFile)
+            {
+                PhoneSyncToggle.IsChecked = false;
+                MessageBox.Show(this,
+                    "Phone sync needs a Google OAuth client for this PC.\n\n" +
+                    $"Download the Desktop app client JSON from Google Cloud Console and save it as:\n{PhoneSync.ClientFile}\n\n" +
+                    "The README's \"Phone sync\" section has the steps.",
+                    "Remnant 2 Overlay", MessageBoxButton.OK, MessageBoxImage.Information);
+                return;
+            }
+            await StartPhoneSyncAsync();
+        }
+        else
+        {
+            _syncPoll.Stop();
+            _syncDebounce.Stop();
+            _settings.PhoneSync = false;
+            await _phoneSync.SignOutAsync();
+            _vm.SyncStatus = "Phone sync off. Your data stays in Google Drive for the phone app.";
+        }
     }
 
     // The game rewrites the saves on checkpoints; reload shortly after they settle.
@@ -102,6 +213,8 @@ public partial class MainWindow : Window
         UnregisterHotKey(new WindowInteropHelper(this).Handle, HotkeyId);
         _vm.CancelIconSync();
         _watcher?.Dispose();
+        _syncPoll.Stop();
+        _syncDebounce.Stop();
         base.OnClosing(e);
     }
 

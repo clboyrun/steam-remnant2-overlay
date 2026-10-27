@@ -16,11 +16,13 @@
     <PackageReference Include="CUE4Parse" Version="$(CUE4ParseVersion)" />
     <PackageReference Include="CUE4Parse-Conversion" Version="$(CUE4ParseVersion)" />
     <PackageReference Include="lib.remnant2.analyzer" Version="$(RemnantAnalyzerVersion)" />
+    <PackageReference Include="Google.Apis.Auth" Version="1.77.0" />
   </ItemGroup>
 
   <ItemGroup>
     <ProjectReference Include="..\Remnant2Overlay.SaveReader\Remnant2Overlay.SaveReader.csproj" />
     <ProjectReference Include="..\Remnant2Overlay.Icons\Remnant2Overlay.Icons.csproj" />
+    <ProjectReference Include="..\Remnant2Overlay.Sync\Remnant2Overlay.Sync.csproj" />
   </ItemGroup>
 
 </Project>
