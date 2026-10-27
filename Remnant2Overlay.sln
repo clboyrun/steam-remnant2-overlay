@@ -1,0 +1,43 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.0.31903.59
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{49F103DF-150C-49B1-9AC5-1C5BE991E0B1}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Remnant2Overlay.Cli", "src\Remnant2Overlay.Cli\Remnant2Overlay.Cli.csproj", "{D4944A53-1C7A-461E-AF75-5EA437DFA716}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Remnant2Overlay.SaveReader", "src\Remnant2Overlay.SaveReader\Remnant2Overlay.SaveReader.csproj", "{2BA5FB69-ECB9-4048-8C43-0EE98CBDF4BA}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{BAAD1930-9298-482E-A89B-657BF22D2B5B}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Remnant2Overlay.SaveReader.Tests", "tests\Remnant2Overlay.SaveReader.Tests\Remnant2Overlay.SaveReader.Tests.csproj", "{C1346F49-7097-4A05-BC31-9056189DC0FA}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{D4944A53-1C7A-461E-AF75-5EA437DFA716}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{D4944A53-1C7A-461E-AF75-5EA437DFA716}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{D4944A53-1C7A-461E-AF75-5EA437DFA716}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{D4944A53-1C7A-461E-AF75-5EA437DFA716}.Release|Any CPU.Build.0 = Release|Any CPU
+		{2BA5FB69-ECB9-4048-8C43-0EE98CBDF4BA}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{2BA5FB69-ECB9-4048-8C43-0EE98CBDF4BA}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{2BA5FB69-ECB9-4048-8C43-0EE98CBDF4BA}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{2BA5FB69-ECB9-4048-8C43-0EE98CBDF4BA}.Release|Any CPU.Build.0 = Release|Any CPU
+		{C1346F49-7097-4A05-BC31-9056189DC0FA}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{C1346F49-7097-4A05-BC31-9056189DC0FA}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{C1346F49-7097-4A05-BC31-9056189DC0FA}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{C1346F49-7097-4A05-BC31-9056189DC0FA}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{D4944A53-1C7A-461E-AF75-5EA437DFA716} = {49F103DF-150C-49B1-9AC5-1C5BE991E0B1}
+		{2BA5FB69-ECB9-4048-8C43-0EE98CBDF4BA} = {49F103DF-150C-49B1-9AC5-1C5BE991E0B1}
+		{C1346F49-7097-4A05-BC31-9056189DC0FA} = {BAAD1930-9298-482E-A89B-657BF22D2B5B}
+	EndGlobalSection
+EndGlobal
