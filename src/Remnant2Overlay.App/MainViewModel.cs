@@ -240,7 +240,14 @@ public sealed class MainViewModel : INotifyPropertyChanged
             var result = await Task.Run(() =>
             {
                 if (force) _iconCache.Clear();
-                return IconSync.Run(_iconCache, _db.Items, options, progress, cancellationToken: cts.Token, stage: stage);
+                // Everything the extractor reports goes to a log next to the cache, for diagnosing misses.
+                Directory.CreateDirectory(Settings.IconDir);
+                using var log = new StreamWriter(Path.Combine(Settings.IconDir, "extract.log"), append: false);
+                log.WriteLine($"{DateTime.Now:u} paks={options.PaksDir} version={options.UnrealVersion ?? "default"}");
+                void Log(string message) { lock (log) log.WriteLine(message); }
+                var result = IconSync.Run(_iconCache, _db.Items, options, progress, Log, cts.Token, stage);
+                Log($"Done: {result.Extracted} extracted, {result.NotFound} not found");
+                return result;
             }, cts.Token);
 
             if (force)

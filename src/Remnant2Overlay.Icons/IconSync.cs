@@ -31,10 +31,16 @@ public static class IconSync
         }
 
         int extracted = 0, notFound = 0, done = 0;
-        stage?.Report($"Reading game files to find {todo.Count} icons (can take a minute)…");
+        void Stage(string message)
+        {
+            log?.Invoke(message);
+            stage?.Report(message);
+        }
+
+        Stage($"Reading game files to find {todo.Count} icons (can take a minute)…");
         using var extractor = new IconExtractor(options);
         int iconTextures = extractor.IconPackagePaths.Count();
-        stage?.Report($"Indexed {extractor.MountedFileCount:N0} game files, {iconTextures:N0} icon textures. Extracting…");
+        Stage($"Indexed {extractor.MountedFileCount:N0} game files, {iconTextures:N0} icon textures. Extracting…");
         try
         {
             foreach (var item in todo)
@@ -44,11 +50,13 @@ public static class IconSync
                 string? source = extractor.Extract(item, outFile, log);
                 if (source is null)
                 {
+                    log?.Invoke($"MISSING {item.AssetName} ({item.ProfileId})");
                     index.Missing.Add(item.AssetName);
                     notFound++;
                 }
                 else
                 {
+                    log?.Invoke($"ok {item.AssetName} <- {source}");
                     index.Icons[item.AssetName] = source;
                     index.Missing.Remove(item.AssetName);
                     extracted++;
