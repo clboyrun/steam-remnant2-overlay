@@ -43,7 +43,8 @@ public sealed record RunInfo(
     string Difficulty,
     string? RespawnPoint,
     IReadOnlyList<RunZone> Zones,
-    IReadOnlyList<string> QuestItems)
+    IReadOnlyList<string> QuestItems,
+    IReadOnlySet<string>? QuestItemIds = null)
 {
     public IEnumerable<RunItem> AllItems => Zones.SelectMany(z => z.Locations).SelectMany(l => l.Sources).SelectMany(s => s.Items);
 }
@@ -55,10 +56,15 @@ public sealed record CharacterRuns(
     WorldSlot ActiveSlot,
     RunInfo Campaign,
     RunInfo? Adventure,
-    IReadOnlyList<string> CompletedQuests)
+    IReadOnlyList<string> CompletedQuests,
+    IReadOnlySet<string>? CompletedQuestIds = null,
+    IReadOnlySet<string>? AccountAwards = null)
 {
     public RunInfo? Get(WorldSlot slot) => slot == WorldSlot.Campaign ? Campaign : Adventure;
 }
+
+/// <summary>One requirement of an item and whether this character/run meets it (null when it can't be told).</summary>
+public sealed record RequirementCheck(string Label, bool? Met);
 
 /// <summary>Per-item status in a run, with a short human-readable reason.</summary>
 public sealed record ItemRunStatus(ItemInfo Item, RunItemStatus Status, string Reason, string? Where);
@@ -95,7 +101,9 @@ public static class RunAnalysis
             c.ActiveWorldSlot,
             Convert(WorldSlot.Campaign, c.Save.Campaign),
             c.Save.Adventure is { } adventure ? Convert(WorldSlot.Adventure, adventure) : null,
-            c.Save.QuestCompletedLog.Select(q => ItemDb.GetItemByIdOrDefault(q)?.Name ?? q).ToList())).ToList();
+            c.Save.QuestCompletedLog.Select(q => ItemDb.GetItemByIdOrDefault(q)?.Name ?? q).ToList(),
+            c.Save.QuestCompletedLog.ToHashSet(StringComparer.Ordinal),
+            dataset.AccountAwards.ToHashSet(StringComparer.Ordinal))).ToList();
     }
 
     private static RunInfo Convert(WorldSlot slot, RolledWorld world) => new(
@@ -113,7 +121,8 @@ public static class RunAnalysis
                     g.Name ?? l.Name,
                     g.Type,
                     g.Items.Select(ConvertItem).ToList())).ToList())).ToList())).ToList(),
-        world.QuestInventory.Select(q => q.LootItem?.Name ?? q.ProfileId).ToList());
+        world.QuestInventory.Select(q => q.LootItem?.Name ?? q.ProfileId).ToList(),
+        world.QuestInventory.Select(q => q.LootItem?.Id).OfType<string>().ToHashSet(StringComparer.Ordinal));
 
     private static RunItem ConvertItem(LootItemExtended item) => new(
         item.Id,
@@ -131,6 +140,40 @@ public static class RunAnalysis
         static string Name(string id) => ItemDb.GetItemByIdOrDefault(id.Trim())?.Name ?? id.Trim();
         return string.Join(", ", prerequisite.Split(',').Select(all =>
             string.Join(" or ", all.Split('|').Select(Name))));
+    }
+
+    /// <summary>Human-readable name for a database id (item, quest, event, award), or the id itself.</summary>
+    public static string NameOf(string id) => ItemDb.GetItemByIdOrDefault(id.Trim())?.Name ?? id.Trim();
+
+    /// <summary>
+    /// Splits a prerequisite ("A, B" = all of; "A | B" = any of) into checks against what the character owns,
+    /// the run's quest items, completed quests and account awards.
+    /// </summary>
+    public static IReadOnlyList<RequirementCheck> CheckPrerequisites(string? prerequisite, CharacterRuns? character, RunInfo? run)
+    {
+        if (string.IsNullOrWhiteSpace(prerequisite)) return [];
+
+        bool? Has(string id)
+        {
+            id = id.Trim();
+            if (character is null) return null;
+            if (ItemDb.GetItemByIdOrDefault(id) is not { } item) return null; // e.g. raw GUIDs
+            if (item.Properties.TryGetValue("ProfileId", out string? profileId) && character.OwnedProfileIds.Contains(profileId)) return true;
+            if (run?.QuestItemIds?.Contains(id) == true) return true;
+            if (character.CompletedQuestIds?.Contains(id) == true) return true;
+            if (character.AccountAwards?.Contains(id) == true) return true;
+            // Archetypes unlock as an account award (Award_Explorer) rather than an item in the inventory.
+            if (item.Properties.TryGetValue("AccountAwardAward", out string? award) && character.AccountAwards?.Contains(award) == true) return true;
+            return false;
+        }
+
+        return prerequisite.Split(',').Select(group =>
+        {
+            var options = group.Split('|').Select(o => o.Trim()).Where(o => o.Length > 0).ToList();
+            var results = options.Select(Has).ToList();
+            bool? met = results.Any(r => r == true) ? true : results.All(r => r == false) ? false : null;
+            return new RequirementCheck(string.Join(" or ", options.Select(NameOf)), met);
+        }).ToList();
     }
 
     /// <summary>Status of every tracked item for one character in one run.</summary>

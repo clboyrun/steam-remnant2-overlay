@@ -19,6 +19,8 @@ public sealed class RunNode
     public required string Title { get; init; }
     public string? Detail { get; init; }
     public RunItemStatus? Status { get; init; }
+    /// <summary>Item id for item rows, so selecting one opens its details.</summary>
+    public string? ItemId { get; init; }
     public bool IsExpanded { get; set; }
     public List<RunNode> Children { get; init; } = [];
 }
@@ -48,6 +50,7 @@ public sealed class MainViewModel : INotifyPropertyChanged
     private string _questStatus = "";
     private bool _nothingLeft;
     private bool _showRunView;
+    private ItemDetails? _details;
 
     public MainViewModel(Settings settings)
     {
@@ -125,6 +128,25 @@ public sealed class MainViewModel : INotifyPropertyChanged
     public string RunSummary { get => _runSummary; private set => Set(ref _runSummary, value); }
     public string QuestStatus { get => _questStatus; private set => Set(ref _questStatus, value); }
     public bool NothingLeft { get => _nothingLeft; private set => Set(ref _nothingLeft, value); }
+
+    /// <summary>The item opened in the details panel, or null when it's closed.</summary>
+    public ItemDetails? Details { get => _details; private set { if (Set(ref _details, value)) Changed(nameof(HasDetails)); } }
+    public bool HasDetails => _details is not null;
+
+    public void ShowDetails(ItemTileViewModel tile) => Details = new ItemDetails(tile, CurrentCharacter, CurrentRun);
+
+    public void ShowDetails(string itemId)
+    {
+        if (Tiles.FirstOrDefault(t => t.Item.Id == itemId) is { } tile) ShowDetails(tile);
+    }
+
+    public void CloseDetails() => Details = null;
+
+    // Statuses change with the save, run or manual marks; keep the open panel current.
+    private void RefreshDetails()
+    {
+        if (_details is { } d) ShowDetails(d.Tile);
+    }
 
     public RunChoice? Run
     {
@@ -308,6 +330,7 @@ public sealed class MainViewModel : INotifyPropertyChanged
 
         Refresh();
         BuildRunTree();
+        RefreshDetails();
     }
 
     public void ClearManual()
@@ -316,6 +339,7 @@ public sealed class MainViewModel : INotifyPropertyChanged
         foreach (var t in Tiles) t.ManualOverride = null;
         Refresh();
         BuildRunTree();
+        RefreshDetails();
     }
 
     private CharacterRuns? CurrentCharacter => _characterIndex < _characters.Count ? _characters[_characterIndex] : null;
@@ -355,6 +379,7 @@ public sealed class MainViewModel : INotifyPropertyChanged
 
         Refresh();
         BuildRunTree();
+        RefreshDetails();
     }
 
     private void UpdateRunChoices(CharacterRuns? character)
@@ -425,6 +450,7 @@ public sealed class MainViewModel : INotifyPropertyChanged
                                 _ => i.HasRequiredMaterial ? "ready to craft" : null,
                             },
                             Status = i.Status,
+                            ItemId = i.Id,
                         }).ToList(),
                     });
                 }

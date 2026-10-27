@@ -112,8 +112,23 @@ public partial class MainWindow : Window
 
     private void Tile_Click(object sender, MouseButtonEventArgs e)
     {
-        if (sender is FrameworkElement { DataContext: ItemTileViewModel tile }) _vm.Toggle(tile);
+        if (sender is not FrameworkElement { DataContext: ItemTileViewModel tile }) return;
+        // Manual mode: click marks owned/missing. Otherwise click opens the item's details.
+        if (_vm.ManualMode) _vm.Toggle(tile);
+        else _vm.ShowDetails(tile);
     }
+
+    private void Tile_RightClick(object sender, MouseButtonEventArgs e)
+    {
+        if (sender is FrameworkElement { DataContext: ItemTileViewModel tile }) _vm.ShowDetails(tile);
+    }
+
+    private void RunTree_SelectedItemChanged(object sender, RoutedPropertyChangedEventArgs<object> e)
+    {
+        if (e.NewValue is RunNode { ItemId: { } id }) _vm.ShowDetails(id);
+    }
+
+    private void CloseDetails_Click(object sender, RoutedEventArgs e) => _vm.CloseDetails();
 
     private void OpenSave_Click(object sender, RoutedEventArgs e)
     {

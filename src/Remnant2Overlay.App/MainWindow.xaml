@@ -53,7 +53,7 @@
             <Border x:Name="Tile" Width="96" Height="118" Margin="4" CornerRadius="6"
                     Background="{StaticResource PanelLight}" BorderThickness="2"
                     BorderBrush="{StaticResource NotHereBrush}" ToolTip="{Binding Tooltip}"
-                    Cursor="Hand" MouseLeftButtonUp="Tile_Click">
+                    Cursor="Hand" MouseLeftButtonUp="Tile_Click" MouseRightButtonUp="Tile_RightClick">
                 <Grid>
                     <Grid.RowDefinitions>
                         <RowDefinition Height="*" />
@@ -192,8 +192,109 @@
                 </StackPanel>
             </DockPanel>
 
+            <!-- Details for the selected item: requirements, quest and where to find it -->
+            <Border DockPanel.Dock="Right" Width="270" Margin="8,0,0,0" Padding="10" CornerRadius="6"
+                    Background="{StaticResource PanelLight}"
+                    Visibility="{Binding HasDetails, Converter={StaticResource BoolToVis}}">
+                <DockPanel DataContext="{Binding Details}">
+                    <Grid DockPanel.Dock="Top">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto" />
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <Image Source="{Binding Icon}" Width="48" Height="48" Margin="0,0,8,0" VerticalAlignment="Top"
+                               RenderOptions.BitmapScalingMode="HighQuality" />
+                        <StackPanel Grid.Column="1">
+                            <TextBlock Text="{Binding Name}" FontWeight="SemiBold" FontSize="15" TextWrapping="Wrap" />
+                            <TextBlock Text="{Binding Subtitle}" Foreground="{StaticResource Muted}" FontSize="11" TextWrapping="Wrap" />
+                        </StackPanel>
+                        <Button Grid.Column="2" Content="✕" Style="{StaticResource FlatButton}" Margin="0" Padding="6,2"
+                                VerticalAlignment="Top" Click="CloseDetails_Click" ToolTip="Close details" />
+                    </Grid>
+                    <ScrollViewer VerticalScrollBarVisibility="Auto" Margin="0,8,0,0">
+                        <StackPanel>
+                            <StackPanel.Resources>
+                                <Style x:Key="Heading" TargetType="TextBlock">
+                                    <Setter Property="Foreground" Value="{StaticResource Accent}" />
+                                    <Setter Property="FontSize" Value="11" />
+                                    <Setter Property="FontWeight" Value="Bold" />
+                                    <Setter Property="Margin" Value="0,10,0,2" />
+                                </Style>
+                            </StackPanel.Resources>
+
+                            <TextBlock Text="{Binding Reason}" TextWrapping="Wrap" FontWeight="SemiBold">
+                                <TextBlock.Style>
+                                    <Style TargetType="TextBlock">
+                                        <Setter Property="Foreground" Value="{StaticResource Muted}" />
+                                        <Style.Triggers>
+                                            <DataTrigger Binding="{Binding Status}" Value="{x:Static sr:RunItemStatus.Owned}">
+                                                <Setter Property="Foreground" Value="{StaticResource OwnedBrush}" />
+                                            </DataTrigger>
+                                            <DataTrigger Binding="{Binding Status}" Value="{x:Static sr:RunItemStatus.Available}">
+                                                <Setter Property="Foreground" Value="{StaticResource AvailableBrush}" />
+                                            </DataTrigger>
+                                            <DataTrigger Binding="{Binding Status}" Value="{x:Static sr:RunItemStatus.NeedsPrerequisite}">
+                                                <Setter Property="Foreground" Value="{StaticResource QuestBrush}" />
+                                            </DataTrigger>
+                                            <DataTrigger Binding="{Binding Status}" Value="{x:Static sr:RunItemStatus.MissedThisRun}">
+                                                <Setter Property="Foreground" Value="{StaticResource MissingBrush}" />
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </TextBlock.Style>
+                            </TextBlock>
+                            <TextBlock Text="{Binding Where, StringFormat=In this run: {0}}" TextWrapping="Wrap" Margin="0,4,0,0"
+                                       Visibility="{Binding Where, Converter={x:Static local:NullToCollapsed.Instance}}" />
+
+                            <TextBlock Text="SOURCE" Style="{StaticResource Heading}"
+                                       Visibility="{Binding Source, Converter={x:Static local:NullToCollapsed.Instance}}" />
+                            <TextBlock Text="{Binding Source}" TextWrapping="Wrap"
+                                       Visibility="{Binding Source, Converter={x:Static local:NullToCollapsed.Instance}}" />
+                            <TextBlock Text="{Binding QuestState}" TextWrapping="Wrap" Foreground="{StaticResource Muted}" FontSize="11"
+                                       Visibility="{Binding QuestState, Converter={x:Static local:NullToCollapsed.Instance}}" />
+
+                            <TextBlock Text="REQUIREMENTS" Style="{StaticResource Heading}"
+                                       Visibility="{Binding HasRequirements, Converter={StaticResource BoolToVis}}" />
+                            <ItemsControl ItemsSource="{Binding Requirements}">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate DataType="{x:Type local:RequirementRow}">
+                                        <DockPanel Margin="0,1">
+                                            <TextBlock x:Name="Mark" Text="{Binding Mark}" Width="16" FontWeight="Bold"
+                                                       Foreground="{StaticResource Muted}" />
+                                            <TextBlock Text="{Binding Label}" TextWrapping="Wrap" />
+                                        </DockPanel>
+                                        <DataTemplate.Triggers>
+                                            <DataTrigger Binding="{Binding Met}" Value="True">
+                                                <Setter TargetName="Mark" Property="Foreground" Value="{StaticResource OwnedBrush}" />
+                                            </DataTrigger>
+                                            <DataTrigger Binding="{Binding Met}" Value="False">
+                                                <Setter TargetName="Mark" Property="Foreground" Value="{StaticResource MissingBrush}" />
+                                            </DataTrigger>
+                                        </DataTemplate.Triggers>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                            <ItemsControl ItemsSource="{Binding Extras}" Margin="0,4,0,0">
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate>
+                                        <TextBlock Text="{Binding StringFormat=• {0}}" TextWrapping="Wrap" Foreground="{StaticResource Muted}" />
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+
+                            <TextBlock Text="HOW TO GET IT" Style="{StaticResource Heading}"
+                                       Visibility="{Binding Note, Converter={x:Static local:NullToCollapsed.Instance}}" />
+                            <TextBlock Text="{Binding Note}" TextWrapping="Wrap"
+                                       Visibility="{Binding Note, Converter={x:Static local:NullToCollapsed.Instance}}" />
+                        </StackPanel>
+                    </ScrollViewer>
+                </DockPanel>
+            </Border>
+
             <Grid>
             <TreeView ItemsSource="{Binding RunTree}" Background="Transparent" BorderThickness="0"
+                      SelectedItemChanged="RunTree_SelectedItemChanged"
                       Visibility="{Binding ShowRunView, Converter={StaticResource BoolToVis}}">
                 <TreeView.ItemContainerStyle>
                     <Style TargetType="TreeViewItem">

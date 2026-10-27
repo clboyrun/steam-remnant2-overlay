@@ -42,6 +42,9 @@ Run the game in **borderless windowed** mode so the overlay can sit on top of it
   Hover for the reason and exact location. **Run map** shows the rolled worlds, locations (with world
   stones), bosses, events, dungeons and vendors that still have something for you. The banner says when a
   run has nothing new left, and the line below it shows story progress and quest items held.
+- **Item details**: click a tile (or an item in the Run map) to open a side panel with its requirements and quest
+  info: each prerequisite marked ✓ have / ✗ missing, the crafting material, where it drops in this run, whether
+  you've finished the quest or event it comes from, and the how-to-get-it note. Right-click opens details in manual mode.
 - **Manual mode**: click tiles to mark them owned or missing yourself (marked with ✎), and pick the world
   you rolled in the world filter. Choices are saved in `%LOCALAPPDATA%\Remnant2Overlay\settings.json`.
 

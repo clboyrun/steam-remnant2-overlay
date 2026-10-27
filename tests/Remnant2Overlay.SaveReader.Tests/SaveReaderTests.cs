@@ -203,6 +203,25 @@ public class RunAnalysisTests
         var run = characters[0].Get(characters[0].ActiveSlot)!;
         Assert.Contains(run.Zones, z => z.World != "Ward 13");
         Assert.Contains(RunAnalysis.Evaluate(Db, characters[0], run), s => s.Status == RunItemStatus.Available);
+
+        // Every item with a prerequisite gets one check per comma-separated group, with readable names.
+        foreach (var item in Db.Items.Where(i => i.Prerequisite is not null))
+        {
+            var checks = RunAnalysis.CheckPrerequisites(item.Prerequisite, characters[0], run);
+            Assert.Equal(item.Prerequisite!.Split(',').Length, checks.Count);
+            Assert.All(checks, c => Assert.False(string.IsNullOrWhiteSpace(c.Label)));
+        }
+    }
+
+    [Fact]
+    public void CheckPrerequisites_SplitsAllOfAndAnyOf()
+    {
+        var checks = RunAnalysis.CheckPrerequisites("Amulet_RedDoeSigil, Quest_Item_Train_AICore | Quest_Item_Extermination_AICore", null, null);
+
+        Assert.Equal(2, checks.Count);
+        Assert.Contains(" or ", checks[1].Label);
+        Assert.All(checks, c => Assert.Null(c.Met)); // no character loaded: unknown, not "missing"
+        Assert.Empty(RunAnalysis.CheckPrerequisites(null, null, null));
     }
 }
 
