@@ -57,6 +57,8 @@ if (force) cache.Clear();
 
 var progress = new Progress<IconSyncProgress>(p =>
     Console.WriteLine($"[{p.Done}/{p.Total}] {(p.IconPath is null ? "MISSING" : "ok     ")} {p.AssetName}"));
-var result = IconSync.Run(cache, ItemDatabase.LoadEmbedded().Items, options, progress, msg => Console.Error.WriteLine("  " + msg));
+var stage = new Progress<string>(Console.WriteLine);
+var result = IconSync.Run(cache, ItemDatabase.LoadEmbedded().Items, options, progress, msg => Console.Error.WriteLine("  " + msg),
+    stage: stage);
 Console.WriteLine($"Done: {result.Extracted} extracted, {result.NotFound} not found. See index.json in the output folder.");
 return 0;

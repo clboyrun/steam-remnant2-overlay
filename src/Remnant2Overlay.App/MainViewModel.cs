@@ -229,13 +229,18 @@ public sealed class MainViewModel : INotifyPropertyChanged
             IconStatus = $"Extracting icons {p.Done}/{p.Total}…";
         });
 
+        var stage = new Progress<string>(message =>
+        {
+            if (!cts.IsCancellationRequested) IconStatus = "Icons: " + message;
+        });
+
         try
         {
             IconStatus = "Checking icons…";
             var result = await Task.Run(() =>
             {
                 if (force) _iconCache.Clear();
-                return IconSync.Run(_iconCache, _db.Items, options, progress, cancellationToken: cts.Token);
+                return IconSync.Run(_iconCache, _db.Items, options, progress, cancellationToken: cts.Token, stage: stage);
             }, cts.Token);
 
             if (force)

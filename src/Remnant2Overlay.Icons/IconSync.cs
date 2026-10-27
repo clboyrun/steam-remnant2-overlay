@@ -15,7 +15,8 @@ public static class IconSync
         IconExtractorOptions options,
         IProgress<IconSyncProgress>? progress = null,
         Action<string>? log = null,
-        CancellationToken cancellationToken = default)
+        CancellationToken cancellationToken = default,
+        IProgress<string>? stage = null)
     {
         string signature = IconExtractor.PaksSignature(options.PaksDir);
         var index = cache.LoadIndex();
@@ -30,7 +31,10 @@ public static class IconSync
         }
 
         int extracted = 0, notFound = 0, done = 0;
+        stage?.Report($"Reading game files to find {todo.Count} icons (can take a minute)…");
         using var extractor = new IconExtractor(options);
+        int iconTextures = extractor.IconPackagePaths.Count();
+        stage?.Report($"Indexed {extractor.MountedFileCount:N0} game files, {iconTextures:N0} icon textures. Extracting…");
         try
         {
             foreach (var item in todo)
