@@ -35,3 +35,12 @@ SOFTWARE.
 
 Remnant 2 names, data and icons belong to Gunfire Games. Icons are extracted locally from your own
 game install into a local cache and are not committed to this repository.
+
+## In-game panel (native/)
+
+Downloaded at build time, not stored in this repository:
+
+- [Dear ImGui](https://github.com/ocornut/imgui) v1.91.5, MIT License, Copyright (c) 2014-2024 Omar Cornut.
+- [MinHook](https://github.com/TsudaKageyu/minhook) v1.3.3, BSD 2-Clause License, Copyright (C) 2009-2017 Tsuda Kageyu.
+- [nlohmann/json](https://github.com/nlohmann/json) v3.11.3, MIT License, Copyright (c) 2013-2022 Niels Lohmann.
+- [RE-UE4SS](https://github.com/UE4SS-RE/RE-UE4SS), MIT License, cloned locally to build the UE4SS mod.

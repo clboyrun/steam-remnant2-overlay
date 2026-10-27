@@ -142,6 +142,30 @@ public sealed class MainViewModel : INotifyPropertyChanged
 
     public void CloseDetails() => Details = null;
 
+    /// <summary>Writes what the in-game UI shows. Cheap enough to do on every change.</summary>
+    private void ExportInGameState()
+    {
+        try
+        {
+            var character = CurrentCharacter;
+            var run = CurrentRun;
+            new InGameState(
+                1,
+                DateTime.Now,
+                character?.Description ?? (CharacterNames.Count > _characterIndex ? CharacterNames[_characterIndex] : ""),
+                _run?.Label ?? "",
+                RunSummary,
+                NothingLeft,
+                QuestStatus.Split(Environment.NewLine, StringSplitOptions.RemoveEmptyEntries),
+                Tiles.Select(t => InGameItem.From(new ItemDetails(t, character, run))).ToList()).Save();
+        }
+        catch (Exception e)
+        {
+            // The in-game UI is optional; never let it break the overlay.
+            Status = $"Couldn't write in-game state: {e.Message}";
+        }
+    }
+
     // Statuses change with the save, run or manual marks; keep the open panel current.
     private void RefreshDetails()
     {
@@ -304,6 +328,7 @@ public sealed class MainViewModel : INotifyPropertyChanged
 
     public void CancelIconSync() => _iconSync?.Cancel();
 
+
     public void SetGameFolder(string folder)
     {
         _settings.GamePaksPath = folder;
@@ -331,6 +356,7 @@ public sealed class MainViewModel : INotifyPropertyChanged
         Refresh();
         BuildRunTree();
         RefreshDetails();
+        ExportInGameState();
     }
 
     public void ClearManual()
@@ -340,6 +366,7 @@ public sealed class MainViewModel : INotifyPropertyChanged
         Refresh();
         BuildRunTree();
         RefreshDetails();
+        ExportInGameState();
     }
 
     private CharacterRuns? CurrentCharacter => _characterIndex < _characters.Count ? _characters[_characterIndex] : null;
@@ -380,6 +407,7 @@ public sealed class MainViewModel : INotifyPropertyChanged
         Refresh();
         BuildRunTree();
         RefreshDetails();
+        ExportInGameState();
     }
 
     private void UpdateRunChoices(CharacterRuns? character)
