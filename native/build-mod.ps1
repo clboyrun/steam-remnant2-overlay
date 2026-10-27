@@ -67,6 +67,23 @@ else {
     & $tools.CMake -S $PSScriptRoot -B $build -G Ninja -DCMAKE_BUILD_TYPE=Game__Shipping__Win64 "-DCMAKE_MAKE_PROGRAM=$($tools.Ninja)" `
         "-DRust_COMPILER=$rustc" "-DRust_CARGO=$cargo" -Wno-dev
     if ($LASTEXITCODE -ne 0) { throw 'CMake configure failed (see above).' }
+
+    # The same old Corrosion takes newer Rust's "/defaultlib:msvcrt" link flag for a library file, and Ninja then
+    # fails looking for a file by that name. Drop it from the cached list (the C++ side links the CRT anyway) and
+    # configure again; Corrosion keeps a cached list instead of recomputing it.
+    $cache = Get-Content (Join-Path $build 'CMakeCache.txt')
+    $fixes = foreach ($var in 'Rust_CARGO_TARGET_LINK_NATIVE_LIBS', 'Rust_CARGO_HOST_TARGET_LINK_NATIVE_LIBS') {
+        $line = $cache | Where-Object { $_ -match "^$($var):[A-Z]+=(.*)$" } | Select-Object -First 1
+        if (-not $line) { continue }
+        $libs = ($line -split '=', 2)[1]
+        $kept = ($libs -split ';' | Where-Object { $_ -and $_ -notmatch '^(-Wl,)?/defaultlib:' }) -join ';'
+        if ($kept -ne $libs) { "-D$var=$kept" }
+    }
+    if ($fixes) {
+        & $tools.CMake -S $PSScriptRoot -B $build @fixes
+        if ($LASTEXITCODE -ne 0) { throw 'CMake configure failed (see above).' }
+    }
+
     & $tools.CMake --build $build --target Remnant2Overlay
     if ($LASTEXITCODE -ne 0) { throw 'Build failed (see above).' }
 }
