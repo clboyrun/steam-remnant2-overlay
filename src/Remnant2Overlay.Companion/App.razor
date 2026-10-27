@@ -1,0 +1,205 @@
+@implements IDisposable
+@inject GoogleAuth Auth
+@inject SyncService Sync
+@inject ItemDatabase Db
+
+<header class="bar">
+    <h1>Remnant 2 Companion</h1>
+    @if (Auth.ClientId is not null)
+    {
+        <button class="primary" disabled="@(Sync.Syncing || _busy)" @onclick="SyncTapped">
+            @(Sync.Syncing ? "Syncing…" : Auth.HasToken ? "Sync" : "Sign in")
+        </button>
+    }
+</header>
+
+<main>
+    @if (Auth.ClientId is null)
+    {
+        <section class="card">
+            <h2>Set up Google sign-in</h2>
+            <p>This copy of the app doesn't have a Google client ID built in. Paste the <b>Web application</b> client ID
+               from your Google Cloud project (the README's "Phone sync" section has the steps).</p>
+            <input class="wide" placeholder="1234…apps.googleusercontent.com" @bind="_clientIdInput" />
+            <button class="primary" disabled="@string.IsNullOrWhiteSpace(_clientIdInput)" @onclick="SaveClientId">Save</button>
+        </section>
+    }
+
+    @if (!string.IsNullOrEmpty(Sync.Status))
+    {
+        <p class="status">@Sync.Status</p>
+    }
+
+    @if (Sync.Doc.Save is not { } save)
+    {
+        @if (Auth.ClientId is not null)
+        {
+            <section class="card">
+                <h2>Nothing synced yet</h2>
+                <p>Tap <b>Sign in</b> with the same Google account you use for <b>Phone sync</b> in the overlay on your PC.
+                   The overlay uploads your items and run every time the game saves.</p>
+            </section>
+        }
+    }
+    else
+    {
+        <section class="pickers">
+            <select @bind="CharacterIndex">
+                @foreach (var c in save.Characters)
+                {
+                    <option value="@c.Index">@(c.Index + 1): @c.Description</option>
+                }
+            </select>
+            @if (Character is { Runs.Count: > 0 } character)
+            {
+                <select @bind="RunSlot">
+                    @foreach (var r in character.Runs)
+                    {
+                        <option value="@r.Slot">@r.Slot@(r.Slot == character.ActiveSlot ? " (playing)" : ""): @string.Join(", ", r.Zones.Where(z => z.World != "Ward 13").Select(z => z.World))</option>
+                    }
+                </select>
+            }
+        </section>
+
+        <p class="muted small">From the overlay, save written @save.ReadAt.ToLocalTime().ToString("g")@(save.Status is { } s && s.StartsWith("Run info") ? $" · {s}" : "")</p>
+
+        @if (Run is { } run)
+        {
+            <div class="banner @(Left.Available + Left.Gated == 0 ? "done" : "")">
+                @if (Left.Available + Left.Gated == 0)
+                {
+                    <text>Nothing new to collect in this @run.Slot.ToLowerInvariant(). Time to reroll.</text>
+                }
+                else
+                {
+                    <text>@run.Slot (@run.Difficulty): <b>@Left.Available</b> available now, <b>@Left.Gated</b> need a quest or unlock first.</text>
+                }
+            </div>
+        }
+
+        <nav class="tabs">
+            <button class="@(_tab == "map" ? "on" : "")" @onclick='() => _tab = "map"'>Run map</button>
+            <button class="@(_tab == "items" ? "on" : "")" @onclick='() => _tab = "items"'>Items</button>
+        </nav>
+
+        @if (_tab == "map")
+        {
+            <RunMap Collection="Current" OpenItem="OpenItem" />
+        }
+        else
+        {
+            <ItemList Collection="Current" Focus="@_focus" OnMark="MarkAsync"
+                      AdventureWorld="@Sync.Doc.AdventureWorld?.Value" OnAdventureWorld="Sync.SetAdventureWorldAsync" />
+        }
+    }
+
+    @if (Auth.Email is not null)
+    {
+        <footer class="muted small">
+            Signed in as @Auth.Email · <a href="" @onclick="SignOut" @onclick:preventDefault>Sign out</a>
+        </footer>
+    }
+</main>
+
+@code {
+    private string _tab = "map";
+    private string? _clientIdInput;
+    private bool _busy;
+    private int _characterIndex = -1;
+    private string? _runSlot;
+    private string? _focus;
+    private Collection? _current;
+
+    protected override async Task OnInitializedAsync()
+    {
+        Sync.Changed += OnSyncChanged;
+        await Auth.LoadAsync();
+        await Sync.LoadCachedAsync();
+        // A token from earlier in the hour still works without a tap.
+        if (Auth.HasToken) await Sync.SyncAsync();
+    }
+
+    private void OnSyncChanged()
+    {
+        _current = null;
+        InvokeAsync(StateHasChanged);
+    }
+
+    public void Dispose() => Sync.Changed -= OnSyncChanged;
+
+    private CharacterSnapshot? Character
+    {
+        get
+        {
+            var characters = Sync.Doc.Save?.Characters ?? [];
+            return characters.FirstOrDefault(c => c.Index == _characterIndex) ?? characters.FirstOrDefault();
+        }
+    }
+
+    private int CharacterIndex
+    {
+        get => Character?.Index ?? 0;
+        set { _characterIndex = value; _runSlot = null; _current = null; }
+    }
+
+    // Follows the run being played unless one was picked.
+    private string? RunSlot
+    {
+        get => Run?.Slot;
+        set { _runSlot = value; _current = null; }
+    }
+
+    private RunSnapshot? Run => Character is { } c
+        ? c.Runs.FirstOrDefault(r => r.Slot == (_runSlot ?? c.ActiveSlot)) ?? c.Runs.FirstOrDefault()
+        : null;
+
+    private Collection Current => _current ??= new Collection(Db, Character, Run, SyncMerge.ActiveOverrides(Sync.Doc, CharacterIndex));
+
+    private (int Available, int Gated) Left
+    {
+        get
+        {
+            var wanted = Run?.Zones.SelectMany(z => z.Locations).SelectMany(l => l.Sources).SelectMany(s => s.Items)
+                .Where(Current.Wanted).ToList() ?? [];
+            return (wanted.Count(i => i.Status == "Available"), wanted.Count(i => i.Status == "NeedsPrerequisite"));
+        }
+    }
+
+    private async Task SyncTapped()
+    {
+        _busy = true;
+        try
+        {
+            if (!Auth.HasToken) await Auth.SignInAsync();
+            await Sync.SyncAsync();
+        }
+        catch (Exception e)
+        {
+            Sync.ShowStatus($"Sign-in failed: {e.Message}");
+        }
+        finally
+        {
+            _busy = false;
+        }
+    }
+
+    private async Task SaveClientId()
+    {
+        if (string.IsNullOrWhiteSpace(_clientIdInput)) return;
+        await Auth.SetClientIdAsync(_clientIdInput);
+    }
+
+    private async Task SignOut()
+    {
+        await Auth.SignOutAsync();
+        await Sync.ForgetAsync();
+    }
+
+    private Task MarkAsync((ItemInfo Item, bool? Owned) mark) => Sync.SetMarkAsync(CharacterIndex, mark.Item.AssetName, mark.Owned);
+
+    private void OpenItem(string itemId)
+    {
+        _focus = itemId;
+        _tab = "items";
+    }
+}

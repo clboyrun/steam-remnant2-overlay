@@ -1,0 +1,135 @@
+@* Every tracked item with filters, like the overlay's tiles. In manual mode a tap marks an item owned or missing. *@
+
+<section class="filters">
+    <div class="chips">
+        @foreach (var c in Labels.Categories)
+        {
+            <button class="chip @(c == _category ? "on" : "")" @onclick="() => _category = c">@c.Label</button>
+        }
+    </div>
+    <div class="row">
+        <select @bind="_show">
+            @foreach (var s in Labels.ShowOptions) { <option>@s</option> }
+        </select>
+        <select value="@(AdventureWorld ?? "")" @onchange="WorldChanged" title="World filter; in manual mode, the adventure you rolled">
+            @foreach (var w in Labels.Worlds) { <option value="@(w.World ?? "")">@w.Label</option> }
+        </select>
+    </div>
+    <div class="row">
+        <input type="search" placeholder="Search name or drop source" @bind="_search" @bind:event="oninput" />
+        <label class="toggle"><input type="checkbox" @bind="_manual" /> Manual</label>
+    </div>
+    <p class="muted small">@Summary · <span class="s-owned">■</span> owned <span class="s-available">■</span> available <span class="s-quest">■</span> needs quest <span class="s-missed">■</span> missed</p>
+</section>
+
+<ul class="items">
+    @foreach (var item in Visible.Take(_limit))
+    {
+        string status = Collection.Status(item);
+        bool? mark = Collection.Mark(item);
+        <li class="item @Labels.StatusClass(status) @(Collection.Owned(item) ? "owned" : "")">
+            <button class="item-head" @onclick="() => Tapped(item)">
+                <span class="name">@item.DisplayName@(mark is not null ? " ✎" : "")</span>
+                <span class="muted small">@Labels.Category(item.Category) · @item.WorldName · @Labels.StatusText(status)</span>
+            </button>
+            @if (_expanded == item.Id)
+            {
+                <div class="item-detail">
+                    @if (Collection.Detail(item) is { } d)
+                    {
+                        <p>@d.Reason</p>
+                        @if (d.Where is not null) { <p class="muted">Where: @d.Where</p> }
+                    }
+                    @if (item.Prerequisite is not null) { <p class="muted">Needs: @item.Prerequisite</p> }
+                    @if (item.Material is not null) { <p class="muted">Crafting material: @item.Material</p> }
+                    @if (item.DropType is not null) { <p class="muted">@item.DropType: @item.DropReference</p> }
+                    @if (item.Note is not null) { <p>@item.Note</p> }
+                    <div class="row">
+                        <button @onclick="() => OnMark.InvokeAsync((item, true))">Mark owned</button>
+                        <button @onclick="() => OnMark.InvokeAsync((item, false))">Mark missing</button>
+                        @if (mark is not null) { <button @onclick="() => OnMark.InvokeAsync((item, (bool?)null))">Follow save</button> }
+                    </div>
+                </div>
+            }
+        </li>
+    }
+</ul>
+@if (Visible.Count() > _limit)
+{
+    <button class="wide" @onclick="() => _limit += 200">Show more (@(Visible.Count() - _limit) left)</button>
+}
+
+@code {
+    [Parameter, EditorRequired] public Collection Collection { get; set; } = null!;
+    [Parameter] public EventCallback<(ItemInfo Item, bool? Owned)> OnMark { get; set; }
+    [Parameter] public string? AdventureWorld { get; set; }
+    [Parameter] public EventCallback<string?> OnAdventureWorld { get; set; }
+    /// <summary>Item id to open, e.g. one tapped in the Run map.</summary>
+    [Parameter] public string? Focus { get; set; }
+
+    private CategoryFilter _category = Labels.Categories[0];
+    private string _show = "Missing";
+    private string _search = "";
+    private bool _manual;
+    private string? _expanded;
+    private string? _focused;
+    private int _limit = 200;
+
+    protected override void OnParametersSet()
+    {
+        if (Focus is null || Focus == _focused) return;
+        _focused = Focus;
+        if (Collection.ById(Focus) is not { } item) return;
+        _expanded = item.Id;
+        _search = item.DisplayName;
+        _show = "All";
+        _category = Labels.Categories[0];
+    }
+
+    private IEnumerable<ItemInfo> Visible => Collection.Db.Items
+        .Where(i => _category.Categories.Contains(i.Category!.Value))
+        .Where(i => AdventureWorld is null || i.World == AdventureWorld)
+        .Where(Shown)
+        .Where(i => _search.Length == 0
+                    || i.DisplayName.Contains(_search, StringComparison.OrdinalIgnoreCase)
+                    || (i.DropReference?.Contains(_search, StringComparison.OrdinalIgnoreCase) ?? false)
+                    || (Collection.Detail(i)?.Where?.Contains(_search, StringComparison.OrdinalIgnoreCase) ?? false))
+        .OrderBy(i => i.Category).ThenBy(i => i.DisplayName);
+
+    private bool Shown(ItemInfo i) => _show switch
+    {
+        "Missing" => !Collection.Owned(i),
+        "Available this run" => Collection.Status(i) == "Available",
+        "Needs quest" => Collection.Status(i) == "NeedsPrerequisite",
+        "Owned" => Collection.Owned(i),
+        _ => true,
+    };
+
+    private string Summary
+    {
+        get
+        {
+            var inScope = Collection.Db.Items.Where(i => _category.Categories.Contains(i.Category!.Value)
+                                                         && (AdventureWorld is null || i.World == AdventureWorld)).ToList();
+            return $"{inScope.Count(Collection.Owned)} / {inScope.Count} owned";
+        }
+    }
+
+    private async Task Tapped(ItemInfo item)
+    {
+        if (!_manual)
+        {
+            _expanded = _expanded == item.Id ? null : item.Id;
+            return;
+        }
+        // Same cycle as the overlay: follow save -> opposite of save -> follow save.
+        bool? next = Collection.Mark(item) is null ? !Collection.OwnedInSave(item) : null;
+        await OnMark.InvokeAsync((item, next));
+    }
+
+    private Task WorldChanged(ChangeEventArgs e)
+    {
+        string? world = e.Value as string;
+        return OnAdventureWorld.InvokeAsync(string.IsNullOrEmpty(world) ? null : world);
+    }
+}

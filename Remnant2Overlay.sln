@@ -25,6 +25,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Remnant2Overlay.Sync", "src
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Remnant2Overlay.Sync.Tests", "tests\Remnant2Overlay.Sync.Tests\Remnant2Overlay.Sync.Tests.csproj", "{4B38DB0A-EA4D-4B51-B1D4-3E26C60A3268}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Remnant2Overlay.Companion", "src\Remnant2Overlay.Companion\Remnant2Overlay.Companion.csproj", "{683424DF-0D52-4627-9ABF-AE80F6410C1E}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -131,6 +133,18 @@ Global
 		{4B38DB0A-EA4D-4B51-B1D4-3E26C60A3268}.Release|x64.Build.0 = Release|Any CPU
 		{4B38DB0A-EA4D-4B51-B1D4-3E26C60A3268}.Release|x86.ActiveCfg = Release|Any CPU
 		{4B38DB0A-EA4D-4B51-B1D4-3E26C60A3268}.Release|x86.Build.0 = Release|Any CPU
+		{683424DF-0D52-4627-9ABF-AE80F6410C1E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{683424DF-0D52-4627-9ABF-AE80F6410C1E}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{683424DF-0D52-4627-9ABF-AE80F6410C1E}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{683424DF-0D52-4627-9ABF-AE80F6410C1E}.Debug|x64.Build.0 = Debug|Any CPU
+		{683424DF-0D52-4627-9ABF-AE80F6410C1E}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{683424DF-0D52-4627-9ABF-AE80F6410C1E}.Debug|x86.Build.0 = Debug|Any CPU
+		{683424DF-0D52-4627-9ABF-AE80F6410C1E}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{683424DF-0D52-4627-9ABF-AE80F6410C1E}.Release|Any CPU.Build.0 = Release|Any CPU
+		{683424DF-0D52-4627-9ABF-AE80F6410C1E}.Release|x64.ActiveCfg = Release|Any CPU
+		{683424DF-0D52-4627-9ABF-AE80F6410C1E}.Release|x64.Build.0 = Release|Any CPU
+		{683424DF-0D52-4627-9ABF-AE80F6410C1E}.Release|x86.ActiveCfg = Release|Any CPU
+		{683424DF-0D52-4627-9ABF-AE80F6410C1E}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -144,5 +158,6 @@ Global
 		{186A86D5-3A0C-48BF-98A3-0971E1911268} = {49F103DF-150C-49B1-9AC5-1C5BE991E0B1}
 		{56A283A9-DD1C-4B13-A271-5BD9A5DCEF2D} = {49F103DF-150C-49B1-9AC5-1C5BE991E0B1}
 		{4B38DB0A-EA4D-4B51-B1D4-3E26C60A3268} = {BAAD1930-9298-482E-A89B-657BF22D2B5B}
+		{683424DF-0D52-4627-9ABF-AE80F6410C1E} = {49F103DF-150C-49B1-9AC5-1C5BE991E0B1}
 	EndGlobalSection
 EndGlobal
