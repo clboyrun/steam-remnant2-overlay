@@ -229,7 +229,7 @@ namespace r2o::ui
                          ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoInputs
                              | ImGuiWindowFlags_NoSavedSettings | ImGuiWindowFlags_NoFocusOnAppearing);
             ImGui::TextColored(Accent, "Remnant 2 Overlay loaded.");
-            ImGui::TextColored(Text, "Press F8 to show or hide it.");
+            ImGui::TextColored(Text, "Press Home to show or hide it.");
             ImGui::End();
         }
     }

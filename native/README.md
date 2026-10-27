@@ -1,6 +1,6 @@
 # In-game panel (UE4SS mod)
 
-Shows the overlay inside Remnant 2: press **F8** in game to open a panel with your missing items, the run summary,
+Shows the overlay inside Remnant 2: press **Home** in game to open a panel with your missing items, the run summary,
 quest status, and each item's requirements and how to get it. While the panel is open, the mouse and keyboard go
 to the panel and not the game.
 
@@ -68,7 +68,7 @@ Run the scripts from the repo folder in any PowerShell window. If PowerShell ref
    `Mods\mods.txt`.
 
 5. Start the overlay app, then the game. A "Remnant 2 Overlay loaded" note shows in the corner for a few seconds;
-   press F8.
+   press Home.
 
 ## Troubleshooting
 
@@ -77,4 +77,4 @@ Run the scripts from the repo folder in any PowerShell window. If PowerShell ref
 - **"No item list yet":** start the overlay app once; it writes the list the panel shows.
 - **DirectX 11:** the panel needs DirectX 12 (the game's default). Remove `-dx11` from the launch options.
 - **New build of the panel:** restart the game. A panel already loaded in the game stays loaded.
-- The game sees F8 as handled by the panel, so don't bind anything to F8 in game.
+- The game sees Home as handled by the panel, so don't bind anything to Home in game.

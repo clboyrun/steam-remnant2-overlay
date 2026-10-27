@@ -15,7 +15,7 @@ Run the game in **borderless windowed** mode so the overlay can sit on top of it
 | `src/Remnant2Overlay.Icons` | Finds the game install and extracts icons into the local cache (CUE4Parse) |
 | `src/Remnant2Overlay.Cli` | Prints owned/total per category and the owned items from a `profile.sav` |
 | `tools/Remnant2Overlay.IconExtractor` | Command-line icon extraction, for re-running or debugging it |
-| `native/` | In-game panel: UE4SS C++ mod plus a DirectX 12 ImGui panel (F8 in game). See [native/README.md](native/README.md) |
+| `native/` | In-game panel: UE4SS C++ mod plus a DirectX 12 ImGui panel (Home in game). See [native/README.md](native/README.md) |
 | `tools/` scripts | Standalone save decompression (PowerShell/Python), item list builder, how-to guide |
 
 ## Getting started (Windows)

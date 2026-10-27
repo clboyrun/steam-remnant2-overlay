@@ -41,7 +41,7 @@ public:
     {
         ModName = STR("Remnant2Overlay");
         ModVersion = STR("0.1.0");
-        ModDescription = STR("In-game panel for missing items, requirements and the current run. F8 shows it.");
+        ModDescription = STR("In-game panel for missing items, requirements and the current run. Home shows it.");
         ModAuthors = STR("Remnant 2 Overlay");
     }
 
@@ -61,7 +61,7 @@ private:
             if (!std::filesystem::exists(dll)) continue;
 
             if (LoadLibraryW(dll.c_str()))
-                Output::send<LogLevel::Normal>(STR("[Remnant2Overlay] Loaded {}. Press F8 in game.\n"), dll.wstring());
+                Output::send<LogLevel::Normal>(STR("[Remnant2Overlay] Loaded {}. Press Home in game.\n"), dll.wstring());
             else
                 Output::send<LogLevel::Error>(STR("[Remnant2Overlay] Couldn't load {} (error {}).\n"), dll.wstring(), GetLastError());
             return;

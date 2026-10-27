@@ -73,4 +73,4 @@ if (Test-Path $modsTxt) {
 Write-Host "Installed to $target"
 Write-Host "  mod:   $($mod.FullName)"
 Write-Host "  panel: $($panel.FullName)"
-Write-Host 'Start Remnant 2 (keep the overlay app running so the panel has data) and press F8.'
+Write-Host 'Start Remnant 2 (keep the overlay app running so the panel has data) and press Home.'

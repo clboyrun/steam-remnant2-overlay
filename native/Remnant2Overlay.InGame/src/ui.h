@@ -3,7 +3,7 @@
 namespace r2o::ui
 {
     /// Hotkey that shows and hides the panel.
-    constexpr int ToggleKey = 0x77; // VK_F8
+    constexpr int ToggleKey = 0x24; // VK_HOME
 
     bool IsVisible();
     void Toggle();

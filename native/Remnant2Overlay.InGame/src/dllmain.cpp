@@ -17,7 +17,7 @@ namespace
         }
 
         r2o::Log("Loaded. Installing hooks...");
-        r2o::Log(r2o::hooks::Install() ? "Hooks installed. Press F8 in game." : "Hook install failed; the panel won't show.");
+        r2o::Log(r2o::hooks::Install() ? "Hooks installed. Press Home in game." : "Hook install failed; the panel won't show.");
         return 0; // the mutex stays held for the life of the game
     }
 }
