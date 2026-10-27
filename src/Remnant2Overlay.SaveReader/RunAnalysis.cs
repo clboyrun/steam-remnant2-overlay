@@ -176,6 +176,10 @@ public static class RunAnalysis
         }).ToList();
     }
 
+    /// <summary>Requirements the save shows the character doesn't have; unknown ones (null) aren't counted.</summary>
+    public static IReadOnlyList<string> MissingRequirements(string? prerequisite, CharacterRuns? character, RunInfo? run) =>
+        CheckPrerequisites(prerequisite, character, run).Where(r => r.Met == false).Select(r => r.Label).ToList();
+
     /// <summary>Status of every tracked item for one character in one run.</summary>
     public static IReadOnlyList<ItemRunStatus> Evaluate(ItemDatabase db, CharacterRuns character, RunInfo run)
     {
@@ -201,8 +205,17 @@ public static class RunAnalysis
             if (character.OwnedProfileIds.Contains(info.ProfileId))
                 return new ItemRunStatus(info, RunItemStatus.Owned, "Owned", best.GetValueOrDefault(info.Id).Where);
 
+            // Requirements the save shows you don't have yet (quest items, unlocks, archetypes, awards).
+            var missing = MissingRequirements(info.Prerequisite, character, run);
+
             if (best.TryGetValue(info.Id, out var hit))
             {
+                // The analyzer may call it available; still flag it so the player can review what's missing.
+                // For gated items, name only what's missing rather than every requirement.
+                if (hit.Item.Status is RunItemStatus.Available or RunItemStatus.NeedsPrerequisite && missing.Count > 0)
+                    return new ItemRunStatus(info, RunItemStatus.NeedsPrerequisite,
+                        $"Rolled, but you don't have: {string.Join(", ", missing)}", hit.Where);
+
                 string reason = hit.Item.Status switch
                 {
                     RunItemStatus.Available => hit.Item.HasRequiredMaterial ? "Available now (you have the material)" : "Available in this run",
@@ -219,6 +232,9 @@ public static class RunAnalysis
                     ? new ItemRunStatus(info, RunItemStatus.NotRolled, $"{worldName} is in this run, but this drop didn't roll", null)
                     : new ItemRunStatus(info, RunItemStatus.WorldNotInRun, $"{worldName} isn't in this run", null);
             }
+
+            if (missing.Count > 0)
+                return new ItemRunStatus(info, RunItemStatus.NeedsPrerequisite, $"Needs: {string.Join(", ", missing)}", null);
 
             return new ItemRunStatus(info, RunItemStatus.Unknown, info.DropType is null ? "Not tied to a location" : $"{info.DropType}: {info.DropReference}", null);
         }).ToList();

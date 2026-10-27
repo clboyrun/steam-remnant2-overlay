@@ -191,6 +191,32 @@ public class RunAnalysisTests
     }
 
     [Fact]
+    public void Evaluate_FlagsAvailableItemWhoseQuestItemIsMissing()
+    {
+        // Cervine Keepsake needs the Red Doe Sigil amulet.
+        var run = Run(Item("Amulet_CervineKeepsake", RunItemStatus.Available));
+
+        var without = RunAnalysis.Evaluate(Db, Character(run), run).Single(s => s.Item.Id == "Amulet_CervineKeepsake");
+        var with = RunAnalysis.Evaluate(Db, Character(run, "Amulet_RedDoeSigil"), run).Single(s => s.Item.Id == "Amulet_CervineKeepsake");
+
+        Assert.Equal(RunItemStatus.NeedsPrerequisite, without.Status);
+        Assert.Contains("Red Doe Sigil", without.Reason);
+        Assert.Equal(RunItemStatus.Available, with.Status);
+    }
+
+    [Fact]
+    public void Evaluate_FlagsUnlockGatedVendorItem()
+    {
+        // Butcher's Fetish is sold in Ward 13 after finishing the campaign on Veteran.
+        var run = Run();
+
+        var status = RunAnalysis.Evaluate(Db, Character(run), run).Single(s => s.Item.Id == "Amulet_ButchersFetish");
+
+        Assert.Equal(RunItemStatus.NeedsPrerequisite, status.Status);
+        Assert.Contains("Veteran", status.Reason);
+    }
+
+    [Fact]
     public void Analyze_RealSaves_WhenAvailable()
     {
         // Set REMNANT2_PROFILE to a copy of profile.sav with its save_N.sav files next to it.

@@ -450,6 +450,15 @@ public sealed class MainViewModel : INotifyPropertyChanged
         // Missing tracked items by db Id, after manual overrides.
         var tilesById = Tiles.ToDictionary(t => t.Item.Id);
         bool Wanted(RunItem item) => tilesById.TryGetValue(item.Id, out var t) && !t.Owned && Collectable.Contains(item.Status);
+        // Evaluate also flags "available" drops whose quest item or unlock isn't in the save.
+        RunItem Effective(RunItem item) =>
+            item.Status == RunItemStatus.Available && tilesById[item.Id].Status == RunItemStatus.NeedsPrerequisite
+                ? item with
+                {
+                    Status = RunItemStatus.NeedsPrerequisite,
+                    Prerequisite = string.Join(", ", RunAnalysis.MissingRequirements(tilesById[item.Id].Item.Prerequisite, CurrentCharacter, run)),
+                }
+                : item;
 
         int available = 0, gated = 0;
         foreach (var zone in run.Zones)
@@ -460,7 +469,7 @@ public sealed class MainViewModel : INotifyPropertyChanged
                 var sourceNodes = new List<RunNode>();
                 foreach (var source in location.Sources)
                 {
-                    var items = source.Items.Where(Wanted).ToList();
+                    var items = source.Items.Where(Wanted).Select(Effective).ToList();
                     if (items.Count == 0) continue;
                     available += items.Count(i => i.Status == RunItemStatus.Available);
                     gated += items.Count(i => i.Status == RunItemStatus.NeedsPrerequisite);
