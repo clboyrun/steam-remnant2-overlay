@@ -45,7 +45,7 @@ $mods = @((Join-Path $win64 'ue4ss\Mods'), (Join-Path $win64 'Mods')) | Where-Ob
 if (-not $mods) { throw "No UE4SS Mods folder under $win64. Install UE4SS first (see native\README.md)." }
 
 $mod = Find-Newest $PSScriptRoot 'Remnant2Overlay.dll'
-if (-not $mod) { throw 'Build the mod first: cd native; xmake f -m "Game__Shipping__Win64" -y; xmake' }
+if (-not $mod) { throw 'Build the mod first: .\native\build-mod.ps1' }
 $panel = Find-Newest (Join-Path $PSScriptRoot 'Remnant2Overlay.InGame') 'Remnant2Overlay.InGame.dll'
 if (-not $panel) { $panel = Get-Item (Join-Path $env:LOCALAPPDATA 'Remnant2Overlay\Remnant2Overlay.InGame.dll') -ErrorAction SilentlyContinue }
 if (-not $panel) { throw 'Build the panel first: .\native\build-panel.ps1' }
@@ -55,6 +55,20 @@ New-Item -ItemType Directory -Force -Path (Join-Path $target 'dlls') | Out-Null
 Copy-Item $mod.FullName (Join-Path $target 'dlls\main.dll') -Force
 Copy-Item $panel.FullName (Join-Path $target 'dlls\Remnant2Overlay.InGame.dll') -Force
 Set-Content -Path (Join-Path $target 'enabled.txt') -Value '' -NoNewline
+
+# UE4SS 3.0.x also reads mods.txt; the entry has to sit above the built-in Keybinds line.
+$modsTxt = Join-Path $mods 'mods.txt'
+if (Test-Path $modsTxt) {
+    $lines = [System.Collections.Generic.List[string]](Get-Content $modsTxt)
+    $existing = $lines.FindIndex({ param($l) $l -match '^\s*Remnant2Overlay\s*:' })
+    if ($existing -ge 0) { $lines[$existing] = 'Remnant2Overlay : 1' }
+    else {
+        $at = $lines.FindIndex({ param($l) $l -match '^\s*;\s*Built-in keybinds' })
+        if ($at -lt 0) { $at = $lines.FindIndex({ param($l) $l -match '^\s*Keybinds\s*:' }) }
+        if ($at -lt 0) { $lines.Add('Remnant2Overlay : 1') } else { $lines.Insert($at, 'Remnant2Overlay : 1') }
+    }
+    Set-Content -Path $modsTxt -Value $lines
+}
 
 Write-Host "Installed to $target"
 Write-Host "  mod:   $($mod.FullName)"

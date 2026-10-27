@@ -6,8 +6,9 @@ to the panel and not the game.
 
 | Path | What it is |
 | --- | --- |
-| `Remnant2Overlay.UE4SS` | The UE4SS C++ mod (xmake). UE4SS loads it at game start, and it loads the panel. Live game data will be read here next. |
+| `Remnant2Overlay.UE4SS` | The UE4SS C++ mod (CMake for UE4SS 3.0.x, xmake for newer). UE4SS loads it at game start, and it loads the panel. Live game data will be read here next. |
 | `Remnant2Overlay.InGame` | The panel (CMake): a DLL that hooks the game's DirectX 12 swap chain and draws with ImGui. |
+| `build-mod.ps1`, `build-panel.ps1` | Build each one with Visual Studio's own tools, from any PowerShell window. |
 | `install-mod.ps1` | Copies both into the game's UE4SS `Mods` folder and enables the mod. |
 
 The panel shows what the overlay app last wrote to `%LOCALAPPDATA%\Remnant2Overlay\ingame-state.json`. The app
@@ -16,40 +17,41 @@ Ctrl+Shift+O) and the panel stays current. It picks up changes within about a se
 
 ## Prerequisites
 
-- Visual Studio 2022 or 2026 with **Desktop development with C++**.
-- [CMake](https://cmake.org/) 3.24+ (Visual Studio's copy works from a Developer PowerShell).
-- [xmake](https://xmake.io/) and [Rust](https://rustup.rs/) (RE-UE4SS needs both to build).
+- Visual Studio 2022 or 2026 with **Desktop development with C++** (includes the "C++ CMake tools for Windows" the
+  scripts use; no separate CMake needed).
+- [Rust](https://rustup.rs/): UE4SS builds part of itself with it.
 - UE4SS installed in the game (you already have it, from generating the mappings file).
 - GitHub access to UE4SS's engine headers: RE-UE4SS pulls a private `UEPseudo` submodule. Link your GitHub account
-  to an Epic Games account ([Epic's guide](https://www.unrealengine.com/en-US/ue-on-github)), accept the invite to
-  the EpicGames organization, then the recursive clone below works.
+  to an Epic Games account ([Epic's guide](https://www.unrealengine.com/en-US/ue-on-github)) and accept the invite
+  to the EpicGames organization.
+
+Run the scripts from the repo folder in any PowerShell window. If PowerShell refuses to run them, use
+`powershell -ExecutionPolicy Bypass -File <script>`.
 
 ## Build
 
 1. Clone RE-UE4SS into `native/RE-UE4SS`, at the **same version as the UE4SS in your game** (first line of
-   `ue4ss\UE4SS.log`, for example 3.0.1). A mod built against a different version may crash on load.
+   `ue4ss\UE4SS.log`, for example 3.0.1). A mod built against a different version may crash on load. No
+   `--recursive`: the next step fetches the submodules over HTTPS (they're listed with SSH links).
 
    ```powershell
-   git clone --recursive -b v3.0.1 https://github.com/UE4SS-RE/RE-UE4SS.git native/RE-UE4SS
+   git clone -b v3.0.1 https://github.com/UE4SS-RE/RE-UE4SS.git native/RE-UE4SS
    ```
 
-2. Build the mod:
+2. Build the mod. This fetches the submodules (sign in to GitHub if asked), then builds with Visual Studio's CMake.
+   UE4SS 3.0.x uses CMake; a newer RE-UE4SS checkout (with `xmake.lua`) is built with xmake instead.
 
    ```powershell
-   cd native
-   xmake f -m "Game__Shipping__Win64" -y
-   xmake
+   .\native\build-mod.ps1
    ```
 
-3. Build the panel, from any PowerShell window. The script finds your Visual Studio (2022, 2026, ...) and uses its
-   own 64-bit compiler, CMake and Ninja:
+3. Build the panel:
 
    ```powershell
-   powershell -ExecutionPolicy Bypass -File .\native\build-panel.ps1
+   .\native\build-panel.ps1
    ```
 
-   Add `-Clean` to start from scratch. It needs the "C++ CMake tools for Windows" component, which the Desktop
-   development with C++ workload includes by default.
+   Both scripts take `-Clean` to start from scratch.
 
 4. Install both into the game (finds the game through Steam; pass `-GameDir` if it doesn't):
 
@@ -58,7 +60,8 @@ Ctrl+Shift+O) and the panel stays current. It picks up changes within about a se
    ```
 
    This creates `Remnant2\Binaries\Win64\ue4ss\Mods\Remnant2Overlay\` with `dlls\main.dll` (the mod),
-   `dlls\Remnant2Overlay.InGame.dll` (the panel), and `enabled.txt`.
+   `dlls\Remnant2Overlay.InGame.dll` (the panel) and `enabled.txt`, and adds `Remnant2Overlay : 1` to
+   `Mods\mods.txt`.
 
 5. Start the overlay app, then the game. A "Remnant 2 Overlay loaded" note shows in the corner for a few seconds;
    press F8.
