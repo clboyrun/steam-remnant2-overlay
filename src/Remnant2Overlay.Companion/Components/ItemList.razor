@@ -44,6 +44,8 @@
                     <span class="name">@item.DisplayName@(mark is not null ? " ✎" : "")</span>
                     <span class="muted small">@Labels.Category(item.Category) · @item.WorldName · @StatusText(status)</span>
                 </button>
+                <a class="wiki" href="@Labels.WikiUrl(item.DisplayName)" target="_blank" rel="noopener"
+                   title="Open @item.DisplayName on the wiki">Wiki</a>
                 @if (Standalone)
                 {
                     bool owned = Collection.Owned(item);

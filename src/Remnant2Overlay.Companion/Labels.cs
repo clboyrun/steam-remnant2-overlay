@@ -74,4 +74,8 @@ public static class Labels
         "WorldNotInRun" => "Not in this run",
         _ => "Not tied to a run",
     };
+
+    /// <summary>The item's page on the Remnant 2 wiki (wiki.gg), by its display name.</summary>
+    public static string WikiUrl(string name) =>
+        "https://remnant2.wiki.gg/wiki/" + Uri.EscapeDataString(name.Replace(' ', '_'));
 }

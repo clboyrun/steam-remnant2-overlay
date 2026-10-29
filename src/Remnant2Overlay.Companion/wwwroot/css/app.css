@@ -40,19 +40,6 @@ main {
     border-bottom: 1px solid var(--line);
 }
 
-.bar-actions { display: flex; align-items: center; gap: 8px; }
-a.button {
-    display: inline-flex;
-    align-items: center;
-    min-height: 40px;
-    padding: 8px 12px;
-    border: 1px solid var(--line);
-    border-radius: 8px;
-    background: var(--panel);
-    color: var(--text);
-    text-decoration: none;
-}
-
 h1 { font-size: 17px; margin: 0; }
 h2 { font-size: 16px; margin: 0 0 8px; }
 p { margin: 6px 0; }
@@ -151,6 +138,10 @@ footer { margin-top: 24px; text-align: center; }
 .item-row { display: flex; align-items: stretch; }
 .item-row .item-head { flex: 1; min-width: 0; }
 .tick { flex: 0 0 52px; border: 0; border-left: 1px solid var(--line); border-radius: 0 8px 8px 0; color: var(--muted); font-size: 20px; }
+.wiki { flex: 0 0 52px; display: flex; align-items: center; justify-content: center; border-left: 1px solid var(--line); color: var(--accent); font-size: 13px; text-decoration: none; }
+.run-row { display: flex; align-items: stretch; gap: 6px; }
+.run-row .run-item { flex: 1; min-width: 0; }
+.run-row .wiki { margin: 4px 0; border: 1px solid var(--line); border-radius: 8px; }
 .tick.on { background: var(--owned); color: #14161a; }
 .item.owned .tick { border-left-color: var(--owned); }
 button.danger { background: var(--missed); border-color: var(--missed); color: #fff; }
