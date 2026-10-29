@@ -42,8 +42,11 @@ public sealed class Settings
     public Dictionary<int, Dictionary<string, DateTimeOffset>> ManualOverrideTimes { get; set; } = [];
     public DateTimeOffset? AdventureWorldChangedAt { get; set; }
 
-    /// <summary>Sync with the phone app through Google Drive (signed in on this PC).</summary>
-    public bool PhoneSync { get; set; }
+    /// <summary>
+    /// Phone sync starts by itself whenever the Google client file is in place; this is set only when the user turns
+    /// it off with the Phone sync button.
+    /// </summary>
+    public bool PhoneSyncOff { get; set; }
 
     public static Settings Load()
     {

@@ -67,7 +67,8 @@ public partial class MainWindow : Window
         {
             // Fill in any icons missing from the local cache; runs in the background.
             _ = _vm.SyncIconsAsync();
-            if (_settings.PhoneSync) _ = StartPhoneSyncAsync();
+            // Automatic once set up: the first start opens the browser to sign in, later starts reuse the saved token.
+            if (PhoneSync.HasClientFile && !_settings.PhoneSyncOff) _ = StartPhoneSyncAsync();
         };
     }
 
@@ -85,7 +86,7 @@ public partial class MainWindow : Window
             _vm.SyncStatus = "Phone sync: signing in with Google (check your browser)…";
             using var timeout = new CancellationTokenSource(TimeSpan.FromMinutes(5));
             await _phoneSync.SignInAsync(timeout.Token);
-            _settings.PhoneSync = true;
+            _settings.PhoneSyncOff = false;
             PhoneSyncToggle.IsChecked = true;
             _syncPoll.Start();
             await SyncPhoneAsync();
@@ -153,7 +154,7 @@ public partial class MainWindow : Window
         {
             _syncPoll.Stop();
             _syncDebounce.Stop();
-            _settings.PhoneSync = false;
+            _settings.PhoneSyncOff = true;
             await _phoneSync.SignOutAsync();
             _vm.SyncStatus = "Phone sync off. Your data stays in Google Drive for the phone app.";
         }

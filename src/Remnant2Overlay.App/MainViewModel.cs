@@ -145,7 +145,7 @@ public sealed class MainViewModel : INotifyPropertyChanged
     public string IconStatus { get => _iconStatus; private set => Set(ref _iconStatus, value); }
     public string SyncStatus { get => _syncStatus; set => Set(ref _syncStatus, value); }
 
-    /// <summary>Raised when the save reloads or a manual choice changes, so the phone sync can upload it.</summary>
+    /// <summary>Raised after every refresh and manual change, so the phone sync can upload it.</summary>
     public event Action? SyncNeeded;
     public string RunSummary { get => _runSummary; private set => Set(ref _runSummary, value); }
     public string QuestStatus { get => _questStatus; private set => Set(ref _questStatus, value); }
@@ -273,7 +273,6 @@ public sealed class MainViewModel : INotifyPropertyChanged
         if (_characterIndex >= Math.Max(_characters.Count, _fallbackInventories.Count)) _characterIndex = 0;
         Changed(nameof(CharacterIndex));
         ApplyCharacter();
-        SyncNeeded?.Invoke();
     }
 
     /// <summary>
@@ -496,7 +495,9 @@ public sealed class MainViewModel : INotifyPropertyChanged
         Refresh();
         BuildRunTree();
         RefreshDetails();
+        // Every refresh (save reload, character or run switch) updates the in-game view and the phone together.
         ExportInGameState();
+        SyncNeeded?.Invoke();
     }
 
     private void UpdateRunChoices(CharacterRuns? character)

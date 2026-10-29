@@ -56,7 +56,7 @@ Run the game in **borderless windowed** mode so the overlay can sit on top of it
 The phone companion shows the same items, run map and quest status as the overlay, and lets you mark items owned or
 missing and pick the adventure world from your phone. The overlay and the phone share one file in your Google
 Drive's hidden **app data** folder: only this app can read it, it doesn't show up in your Drive, and it doesn't
-count against anything you can see. The overlay uploads after every save reload and manual change and checks for
+count against anything you can see. The overlay uploads after every refresh and manual change and checks for
 the phone's changes every minute; the phone syncs when you open it or tap **Sync**. Manual marks made on both sides
 are merged item by item (the later change wins).
 
@@ -80,8 +80,11 @@ same project, because the app data folder belongs to the project.
 
 ### Overlay
 
-Click **Phone sync** in the bottom bar. Your browser opens for Google sign-in the first time; after that the overlay
-signs in by itself. The status line shows the last sync. Turning **Phone sync** off signs out and leaves the file in Drive.
+Phone sync is automatic once `google-client.json` is in place: the first time the overlay starts, your browser opens
+for Google sign-in; after that it signs in by itself on every start. It syncs after every refresh (each time the game
+writes the save, which is also when the in-game view updates, and when you switch character or run), after manual
+changes, and checks for the phone's changes every minute. The status line under the buttons shows the last sync.
+The **Phone sync** button turns it off (signs out, leaving the file in Drive) and back on.
 
 ### Hosting the phone app
 
