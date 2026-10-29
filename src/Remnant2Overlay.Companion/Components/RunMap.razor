@@ -37,10 +37,14 @@ else
                             </div>
                             @foreach (var item in items)
                             {
-                                <button class="run-item @Labels.StatusClass(item.Status)" @onclick="() => OpenItem.InvokeAsync(item.Id)">
-                                    <span>@item.Name</span>
-                                    <span class="muted small">@Detail(item)</span>
-                                </button>
+                                <div class="run-row">
+                                    <button class="run-item @Labels.StatusClass(item.Status)" @onclick="() => OpenItem.InvokeAsync(item.Id)">
+                                        <span>@item.Name</span>
+                                        <span class="muted small">@Detail(item)</span>
+                                    </button>
+                                    <a class="wiki" href="@Labels.WikiUrl(item.Name)" target="_blank" rel="noopener"
+                                       title="Open @item.Name on the wiki">Wiki</a>
+                                </div>
                             }
                         </div>
                     }
