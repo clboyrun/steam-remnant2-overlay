@@ -1,7 +1,7 @@
 # Remnant 2 Overlay
 
 A Windows companion window for Remnant 2 (Steam) that reads your save, shows which weapons, armor,
-mutators, rings, amulets, relics and traits you own or are missing, and later suggests run paths for the missing ones.
+mutators, rings, amulets, relics, relic fragments, traits and archetypes you own or are missing, and later suggests run paths for the missing ones.
 
 Steam's own overlay can't host third-party content, so this is a borderless, always-on-top window.
 Run the game in **borderless windowed** mode so the overlay can sit on top of it.
@@ -15,6 +15,7 @@ Run the game in **borderless windowed** mode so the overlay can sit on top of it
 | `src/Remnant2Overlay.Icons` | Finds the game install and extracts icons into the local cache (CUE4Parse) |
 | `src/Remnant2Overlay.Sync` | Phone sync file, merge rules and Google Drive app data client (shared by overlay and phone app) |
 | `src/Remnant2Overlay.Companion` | Phone companion app (Blazor WebAssembly, installable from the browser) |
+| `src/Remnant2Overlay.Planner` | Build planner: item stats, damage and defense math, missing items and route for a build |
 | `src/Remnant2Overlay.Cli` | Prints owned/total per category and the owned items from a `profile.sav` |
 | `tools/Remnant2Overlay.IconExtractor` | Command-line icon extraction, for re-running or debugging it |
 | `native/` | In-game panel: UE4SS C++ mod plus a DirectX 12 ImGui panel (Home in game). See [native/README.md](native/README.md) |
@@ -119,6 +120,27 @@ The companion also works on its own for players who can't run the overlay, such 
   becomes a character in the app. Console save files aren't readable this way.
 
 Switching back to **PC with overlay** keeps the console characters; the two modes don't share data.
+
+### Build your character (planner)
+
+**Build your character** at the top of the companion plans a build and compares it with a character:
+
+- **Build**: two archetypes and a skill each, long gun, hand gun and melee (upgrade level, mod, mutator), helm, chest,
+  legs, gloves, amulet, four rings, relic, three relic fragments, and trait points (the archetypes' points are
+  filled in; the total is checked against 110). Every pick shows its effect text and a wiki link.
+- **Stats & DPS**: health, stamina, armor and damage reduction (`armor / (armor + 200)`, combined with flat
+  reduction, capped at 80%), weight and weight class, the five resistances; per weapon the DPS range (body shots
+  without crits up to every shot a weakspot crit) and expected DPS from crit chance and a weakspot-hit slider. Damage
+  follows remnant2.wiki.gg: base × (1 + Σ damage) × (1 + 50% + Σ crit damage) × (1 + weakspot), upgrades add 10%
+  of base per level (+20) or 20% for special weapons (+10). Bonuses are read from item descriptions; situational
+  ones (after a kill, while bleeding…) start switched off and can be ticked on.
+- **What I need**: link the build to a synced PC character or a console character to list what's missing, grouped
+  into a route: grab what the current run has, unlock what it gates, buy in Ward 13, then one adventure per world
+  with the most build items first. Archetypes (their engrams) and relic fragments are read from the save like other
+  items; the few things it can't see, such as legendary fragments, are listed to check by hand.
+
+Builds are kept in that browser. Item stats come from the [Remnant 2 Toolkit](https://github.com/joshpayette/remnant2-toolkit)
+(see THIRD_PARTY_NOTICES.md); to refresh them, clone it and run `python tools/build_planner_data.py path/to/remnant2-toolkit`.
 
 ## Icon extraction notes
 

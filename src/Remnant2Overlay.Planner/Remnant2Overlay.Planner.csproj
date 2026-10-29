@@ -1,0 +1,11 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- Build planner: item stats (wwwroot/data/planner.json in the companion), the damage and defense math, and the
+       steps from a character's items to a planned build. No dependencies, so the phone app stays small. -->
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+</Project>

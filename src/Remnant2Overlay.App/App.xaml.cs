@@ -18,6 +18,7 @@ public partial class App : Application
         ItemCategory.Mutator => "Mutator",
         ItemCategory.RelicFragment => "Relic fragment",
         ItemCategory.Relic => "Relic",
+        ItemCategory.Archetype => "Archetype",
         ItemCategory.Trait => "Trait",
         _ => "Other",
     };

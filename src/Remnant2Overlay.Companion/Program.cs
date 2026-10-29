@@ -15,5 +15,7 @@ builder.Services.AddSingleton<LocalCache>();
 builder.Services.AddSingleton<GoogleAuth>();
 builder.Services.AddSingleton<SyncService>();
 builder.Services.AddSingleton<ProfileStore>();
+builder.Services.AddSingleton<BuildStore>();
+builder.Services.AddSingleton<PlannerData>();
 
 await builder.Build().RunAsync();

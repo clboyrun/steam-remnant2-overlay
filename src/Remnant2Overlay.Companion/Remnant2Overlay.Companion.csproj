@@ -19,6 +19,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Remnant2Overlay.Sync\Remnant2Overlay.Sync.csproj" />
+    <ProjectReference Include="..\Remnant2Overlay.Planner\Remnant2Overlay.Planner.csproj" />
   </ItemGroup>
 
   <!-- The item list and its model, shared with the overlay. Linked rather than referencing the SaveReader project,
