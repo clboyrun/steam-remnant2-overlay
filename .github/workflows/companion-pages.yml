@@ -10,6 +10,7 @@ on:
       - src/Remnant2Overlay.Companion/**
       - src/Remnant2Overlay.Sync/**
       - src/Remnant2Overlay.SaveReader/**
+      - src/Remnant2Overlay.Planner/**
       - .github/workflows/companion-pages.yml
   workflow_dispatch:
 

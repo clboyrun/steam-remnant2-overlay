@@ -1,0 +1,291 @@
+@* "Build your character": pick archetypes, traits, weapons (with upgrade level, mod and mutator), armor, amulet, rings,
+   relic and fragments; see the stats and damage; and compare with a character to get what's missing and a route. *@
+@implements IDisposable
+@inject BuildStore Builds
+@inject PlannerData Data
+
+@if (_db is null)
+{
+    <p class="muted">@(_error ?? "Loading item stats…")</p>
+    @if (_error is not null) { <button @onclick="LoadAsync">Try again</button> }
+}
+else if (Builds.Active is not { } build)
+{
+    <section class="card">
+        <h2>Plan a build</h2>
+        <p>Pick archetypes, traits, weapons, armor, amulet, rings and relic to see health, armor, weight, resistances and
+           damage per second. Link it to one of your characters to see what you still need and where to get it.</p>
+        <div class="row">
+            <input placeholder="Build name, e.g. Crit Hunter" @bind="_newName" @bind:event="oninput" />
+            <button class="primary" @onclick="CreateAsync">Create</button>
+        </div>
+    </section>
+}
+else
+{
+    var stats = BuildCalculator.Compute(build, _db);
+    var character = Characters.FirstOrDefault(c => c.Key == build.LinkedCharacter);
+
+    <section class="pickers">
+        <select value="@build.Id" @onchange="e => Builds.SwitchAsync((string)e.Value!)">
+            @foreach (var b in Builds.Builds) { <option value="@b.Id">@b.Name</option> }
+        </select>
+        <button @onclick="() => _managing = !_managing">@(_managing ? "Done" : "Builds")</button>
+    </section>
+
+    @if (_managing)
+    {
+        <section class="card">
+            <div class="row">
+                <input placeholder="Rename this build" @bind="_rename" @bind:event="oninput" />
+                <button disabled="@string.IsNullOrWhiteSpace(_rename)" @onclick="RenameAsync">Rename</button>
+            </div>
+            <div class="row">
+                <input placeholder="New build name" @bind="_newName" @bind:event="oninput" />
+                <button @onclick="CreateAsync">New build</button>
+            </div>
+            @if (_confirmDelete)
+            {
+                <div class="row">
+                    <button class="danger" @onclick="DeleteAsync">Delete @build.Name</button>
+                    <button @onclick="() => _confirmDelete = false">Keep</button>
+                </div>
+            }
+            else
+            {
+                <button @onclick="() => _confirmDelete = true">Delete this build…</button>
+            }
+        </section>
+    }
+
+    <section class="pickers">
+        <select value="@(build.LinkedCharacter ?? "")" @onchange="LinkChanged" title="Character to compare this build with">
+            <option value="">Not linked to a character</option>
+            @foreach (var c in Characters) { <option value="@c.Key">Linked: @c.Label</option> }
+        </select>
+        @if (character is not null)
+        {
+            <label class="toggle"><input type="checkbox" @bind="_ownedOnly" /> Owned only</label>
+        }
+    </section>
+
+    <nav class="tabs">
+        <button class="@(_tab == "build" ? "on" : "")" @onclick='() => _tab = "build"'>Build</button>
+        <button class="@(_tab == "stats" ? "on" : "")" @onclick='() => _tab = "stats"'>Stats &amp; DPS</button>
+        <button class="@(_tab == "route" ? "on" : "")" @onclick='() => _tab = "route"'>What I need</button>
+    </nav>
+
+    @if (_tab == "build")
+    {
+        var col = character?.Collection;
+
+        <h2 class="spaced">Archetypes</h2>
+        @for (int i = 0; i < 2; i++)
+        {
+            int at = i;
+            var archetype = _db.Find(build.Archetypes[at]);
+            <SlotPicker Label="@(at == 0 ? "Primary archetype" : "Secondary archetype")" Items="Archetypes(build, at)" Value="@build.Archetypes[at]"
+                        ValueChanged="v => Set(() => { build.Archetypes[at] = v; build.Skills[at] = null; })" ShowDetail="false" />
+            @if (archetype is not null)
+            {
+                <SlotPicker Label="@($"{archetype.Name} skill")" Items="@(_db.Of("skill").Where(s => s.LinkedArchetype == archetype.Name))"
+                            Value="@build.Skills[at]" ValueChanged="v => Set(() => build.Skills[at] = v)" Detail="@Cooldown(build.Skills[at])" />
+            }
+        }
+
+        <h2 class="spaced">Weapons</h2>
+        @foreach (var slot in build.Weapons)
+        {
+            var weapon = _db.Find(slot.Weapon);
+            <SlotPicker Label="@Cap(slot.Slot)" Items="@(_db.Of("weapon").Where(w => w.Sub == slot.Slot))" Value="@slot.Weapon"
+                        ValueChanged="v => Set(() => { slot.Weapon = v; slot.Mod = null; slot.Level = Math.Min(slot.Level, _db.Find(v)?.MaxLevel ?? 0); })"
+                        Detail="@WeaponLine(weapon)" Character="col" OwnedOnly="_ownedOnly" />
+            @if (weapon is not null)
+            {
+                <div class="row">
+                    <select value="@slot.Level" @onchange="e => Set(() => slot.Level = int.Parse((string)e.Value!))" title="Upgrade level">
+                        @for (int level = 0; level <= weapon.MaxLevel; level++) { <option value="@level">+@level</option> }
+                    </select>
+                    @if (weapon.IsSpecialWeapon)
+                    {
+                        <span class="muted small inline">Mod: @weapon.LinkedMod (built in)</span>
+                    }
+                </div>
+                @if (!weapon.IsSpecialWeapon && !weapon.IsMelee)
+                {
+                    <SlotPicker Label="Mod" Items="StandaloneMods" Value="@slot.Mod" ValueChanged="v => Set(() => slot.Mod = v)" Character="col" OwnedOnly="_ownedOnly" />
+                }
+                <SlotPicker Label="Mutator" Items="@(_db.Of("mutator").Where(m => m.Sub == (weapon.IsMelee ? "melee" : "gun")))" Value="@slot.Mutator"
+                            ValueChanged="v => Set(() => slot.Mutator = v)" Character="col" OwnedOnly="_ownedOnly" />
+            }
+        }
+
+        <h2 class="spaced">Armor</h2>
+        <SlotPicker Label="Helm" Items="@(_db.Of("helm"))" Value="@build.Helm" ValueChanged="v => Set(() => build.Helm = v)" Detail="@ArmorLine(build.Helm)" Character="col" OwnedOnly="_ownedOnly" />
+        <SlotPicker Label="Chest" Items="@(_db.Of("torso"))" Value="@build.Torso" ValueChanged="v => Set(() => build.Torso = v)" Detail="@ArmorLine(build.Torso)" Character="col" OwnedOnly="_ownedOnly" />
+        <SlotPicker Label="Legs" Items="@(_db.Of("legs"))" Value="@build.Legs" ValueChanged="v => Set(() => build.Legs = v)" Detail="@ArmorLine(build.Legs)" Character="col" OwnedOnly="_ownedOnly" />
+        <SlotPicker Label="Gloves" Items="@(_db.Of("gloves"))" Value="@build.Gloves" ValueChanged="v => Set(() => build.Gloves = v)" Detail="@ArmorLine(build.Gloves)" Character="col" OwnedOnly="_ownedOnly" />
+
+        <h2 class="spaced">Amulet and rings</h2>
+        <SlotPicker Label="Amulet" Items="@(_db.Of("amulet"))" Value="@build.Amulet" ValueChanged="v => Set(() => build.Amulet = v)" Character="col" OwnedOnly="_ownedOnly" />
+        @for (int i = 0; i < build.Rings.Length; i++)
+        {
+            int at = i;
+            <SlotPicker Label="@($"Ring {at + 1}")" Items="@(Unused(_db.Of("ring"), build.Rings, at))" Value="@build.Rings[at]"
+                        ValueChanged="v => Set(() => build.Rings[at] = v)" Character="col" OwnedOnly="_ownedOnly" />
+        }
+
+        <h2 class="spaced">Relic</h2>
+        <SlotPicker Label="Relic" Items="@(_db.Of("relic"))" Value="@build.Relic" ValueChanged="v => Set(() => build.Relic = v)" Character="col" OwnedOnly="_ownedOnly" />
+        @for (int i = 0; i < build.Fragments.Length; i++)
+        {
+            int at = i;
+            <SlotPicker Label="@($"Relic fragment {at + 1}")" Items="@(Unused(_db.Of("fragment").Where(f => f.Sub != "legendary"), build.Fragments, at))"
+                        Value="@build.Fragments[at]" ValueChanged="v => Set(() => build.Fragments[at] = v)" />
+        }
+
+        <h2 class="spaced">Traits <span class="muted small">@stats.TraitPointsUsed / @Build.TraitPointLimit points</span></h2>
+        @if (stats.TraitPointsUsed > Build.TraitPointLimit)
+        {
+            <p class="warn small">That's more trait points than a character can have.</p>
+        }
+        <ul class="traits">
+            @foreach (var t in stats.Traits)
+            {
+                var trait = t;
+                <li>
+                    <div class="trait-row">
+                        <span class="trait-name">@trait.Trait.Name <span class="muted small">@trait.Total@(trait.FromArchetypes > 0 ? $" ({trait.FromArchetypes} from archetypes)" : "")</span></span>
+                        <button class="step" disabled="@(trait.Spent == 0)" @onclick="() => AddPoints(build, trait.Trait, -1)">−</button>
+                        <button class="step" disabled="@(trait.Total >= Build.MaxTraitPoints)" @onclick="() => AddPoints(build, trait.Trait, 1)">+</button>
+                        <a class="wiki" href="@Labels.WikiUrl(trait.Trait.Name)" target="_blank" rel="noopener" title="Open @trait.Trait.Name on the wiki">Wiki</a>
+                    </div>
+                    <p class="muted small">@trait.Trait.Desc</p>
+                </li>
+            }
+        </ul>
+        <select @key="_traitPicks" value="" @onchange="e => AddTrait(build, e)">
+            <option value="">+ Add a trait</option>
+            @foreach (var trait in AvailableTraits(build, stats)) { <option value="@trait.Id">@trait.Name@(trait.Sub == "core" ? " (core)" : "")</option> }
+        </select>
+    }
+    else if (_tab == "stats")
+    {
+        <PlannerStats Build="build" Stats="stats" OnChange="SaveAsync" />
+    }
+    else
+    {
+        <PlannerRoute Build="build" Db="_db" Character="character" />
+    }
+
+    <p class="muted small">Item stats from the Remnant 2 Toolkit (@_db.Source[..Math.Min(_db.Source.Length, 24)]), damage rules from
+       remnant2.wiki.gg. Effects with conditions are listed on the Stats tab to switch on when they apply.</p>
+}
+
+@code {
+    [Parameter] public IReadOnlyList<RuntimeCharacter> Characters { get; set; } = [];
+
+    private PlannerDatabase? _db;
+    private string? _error;
+    private string _tab = "build";
+    private string? _newName, _rename;
+    private bool _managing, _confirmDelete, _ownedOnly;
+    private int _traitPicks;
+    private List<PlannerItem>? _standaloneMods;
+
+    protected override async Task OnInitializedAsync()
+    {
+        Builds.Changed += OnChanged;
+        await Builds.LoadAsync();
+        await LoadAsync();
+    }
+
+    private async Task LoadAsync()
+    {
+        _error = null;
+        try { _db = await Data.LoadAsync(); }
+        catch (Exception e) { _error = $"Couldn't load the item stats ({e.Message})."; }
+    }
+
+    private void OnChanged() => InvokeAsync(StateHasChanged);
+
+    public void Dispose() => Builds.Changed -= OnChanged;
+
+    private Task SaveAsync() => Builds.SaveAsync();
+
+    private Task Set(Action change)
+    {
+        change();
+        return Builds.SaveAsync();
+    }
+
+    private Task CreateAsync()
+    {
+        string? link = Builds.Active?.LinkedCharacter ?? Characters.FirstOrDefault()?.Key;
+        var task = Builds.CreateAsync(_newName ?? "", link);
+        _newName = null;
+        _managing = false;
+        _tab = "build";
+        return task;
+    }
+
+    private Task RenameAsync()
+    {
+        if (Builds.Active is not { } build || string.IsNullOrWhiteSpace(_rename)) return Task.CompletedTask;
+        build.Name = _rename.Trim();
+        _rename = null;
+        return Builds.SaveAsync();
+    }
+
+    private Task DeleteAsync()
+    {
+        _confirmDelete = false;
+        _managing = false;
+        return Builds.Active is { } build ? Builds.DeleteAsync(build.Id) : Task.CompletedTask;
+    }
+
+    private Task LinkChanged(ChangeEventArgs e) =>
+        Builds.Active is { } build ? Set(() => build.LinkedCharacter = e.Value is string s && s.Length > 0 ? s : null) : Task.CompletedTask;
+
+    // Mods that aren't the fixed mod of a special weapon.
+    private List<PlannerItem> StandaloneMods => _standaloneMods ??=
+        _db!.Of("mod").Where(m => !_db.Items.Any(w => w.Kind == "weapon" && w.LinkedMod == m.Name)).ToList();
+
+    private IEnumerable<PlannerItem> Archetypes(Build build, int at) =>
+        _db!.Of("archetype").Where(a => a.Id == build.Archetypes[at] || !build.Archetypes.Contains(a.Id));
+
+    private static IEnumerable<PlannerItem> Unused(IEnumerable<PlannerItem> items, string?[] slots, int at) =>
+        items.Where(i => i.Id == slots[at] || !slots.Contains(i.Id));
+
+    // Archetype traits only come from the archetypes in the build; they're added with them.
+    private IEnumerable<PlannerItem> AvailableTraits(Build build, BuildStats stats) =>
+        _db!.Of("trait").Where(t => t.Sub != "archetype" && stats.Traits.All(s => s.Trait.Id != t.Id))
+            .OrderBy(t => t.Sub == "core" ? 0 : 1).ThenBy(t => t.Name);
+
+    private Task AddTrait(Build build, ChangeEventArgs e)
+    {
+        if (e.Value is not string id || id.Length == 0) return Task.CompletedTask;
+        _traitPicks++; // a fresh list, back on "Add a trait"
+        return Set(() => build.Traits[id] = Math.Max(1, build.Traits.GetValueOrDefault(id)));
+    }
+
+    private Task AddPoints(Build build, PlannerItem trait, int delta) => Set(() =>
+    {
+        int spent = Math.Max(0, build.Traits.GetValueOrDefault(trait.Id) + delta);
+        if (spent == 0) build.Traits.Remove(trait.Id);
+        else build.Traits[trait.Id] = spent;
+    });
+
+    private string? WeaponLine(PlannerItem? w) => w is null ? null
+        : $"{w.Stat("Damage"):0.#} damage" + (w.Stat("Rps") > 0 ? $" · {w.Stat("Rps"):0.##} shots/s" : "")
+          + (w.Stat("Magazine") > 0 ? $" · mag {w.Stat("Magazine"):0}" : "") + $" · crit {w.Stat("Crit"):0}% · weakspot +{w.Stat("Weakspot"):0}%"
+          + $" · up to +{w.MaxLevel}";
+
+    private string? ArmorLine(string? id) => _db!.Find(id) is { } a
+        ? $"{a.Stat("Armor"):0.#} armor · {a.Stat("Weight"):0.#} weight" + (a.Set is null ? "" : $" · {a.Set}")
+        : null;
+
+    private string? Cooldown(string? skill) => _db!.Find(skill) is { } s && s.Stat("Cooldown") > 0 ? $"Cooldown {s.Stat("Cooldown"):0}s" : null;
+
+    private static string Cap(string s) => s.Length == 0 ? s : char.ToUpperInvariant(s[0]) + s[1..];
+}

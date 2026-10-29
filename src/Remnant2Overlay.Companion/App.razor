@@ -16,6 +16,17 @@
 </header>
 
 <main>
+    <nav class="tabs page">
+        <button class="@(_page == CollectionPage ? "on" : "")" @onclick="() => SetPageAsync(CollectionPage)">Collection</button>
+        <button class="@(_page == PlannerPage ? "on" : "")" @onclick="() => SetPageAsync(PlannerPage)">Build your character</button>
+    </nav>
+
+    @if (_page == PlannerPage)
+    {
+        <BuildPlanner Characters="RuntimeCharacters" />
+    }
+    else
+    {
     <nav class="tabs mode">
         <button class="@(_mode == OverlayMode ? "on" : "")" @onclick="() => SetModeAsync(OverlayMode)">PC with overlay</button>
         <button class="@(_mode == DeviceMode ? "on" : "")" @onclick="() => SetModeAsync(DeviceMode)">Console / no overlay</button>
@@ -128,13 +139,16 @@
             </footer>
         }
     }
+    }
 </main>
 
 @code {
     private const string ModeKey = "r2c.mode", OverlayMode = "overlay", DeviceMode = "device";
+    private const string PageKey = "r2c.page", CollectionPage = "collection", PlannerPage = "planner";
     private static readonly Dictionary<string, bool> NoMarks = [];
 
     private string? _mode;
+    private string _page = CollectionPage;
     private Collection? _deviceCollection;
     private string _tab = "map";
     private string? _clientIdInput;
@@ -153,6 +167,7 @@
         await Profiles.LoadAsync();
         // Before the mode existed everyone used the overlay, so anyone with synced data stays on it.
         _mode = await Cache.GetAsync(ModeKey) ?? (Sync.Doc.Save is not null || Auth.HasToken ? OverlayMode : null);
+        _page = await Cache.GetAsync(PageKey) ?? CollectionPage;
         // A token from earlier in the hour still works without a tap.
         if (_mode == OverlayMode && Auth.HasToken) await Sync.SyncAsync();
     }
@@ -163,6 +178,31 @@
         _mode = mode;
         await Cache.SetAsync(ModeKey, mode);
         if (first && Auth.HasToken) await Sync.SyncAsync();
+    }
+
+    private async Task SetPageAsync(string page)
+    {
+        _page = page;
+        await Cache.SetAsync(PageKey, page);
+    }
+
+    /// <summary>Every character a build can be compared with: synced ones (with the run being played) and console ones.</summary>
+    private IReadOnlyList<RuntimeCharacter> RuntimeCharacters
+    {
+        get
+        {
+            var list = new List<RuntimeCharacter>();
+            foreach (var c in Sync.Doc.Save?.Characters ?? [])
+            {
+                var run = c.Runs.FirstOrDefault(r => r.Slot == c.ActiveSlot) ?? c.Runs.FirstOrDefault();
+                list.Add(new RuntimeCharacter($"overlay:{c.Index}", $"PC {c.Index + 1}: {c.Description}",
+                    new Collection(Db, c, run, SyncMerge.ActiveOverrides(Sync.Doc, c.Index))));
+            }
+            foreach (var p in Profiles.Profiles)
+                list.Add(new RuntimeCharacter($"device:{p.Id}", p.Name,
+                    new Collection(Db, new CharacterSnapshot { Description = p.Name, Owned = [.. p.Owned] }, null, NoMarks)));
+            return list;
+        }
     }
 
     private void OnProfilesChanged()

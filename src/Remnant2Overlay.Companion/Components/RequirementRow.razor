@@ -1,0 +1,52 @@
+@* One item a build needs: what part of the build it is, whether the character has it, and how to get it. *@
+
+<li class="item @StatusClass">
+    <div class="item-row">
+        <button class="item-head" @onclick="() => _open = !_open">
+            <span class="name">@Requirement.Item.Name@(Requirement.Done ? " ✓" : "")</span>
+            <span class="muted small">@Requirement.Part · @StatusText</span>
+        </button>
+        <a class="wiki" href="@Labels.WikiUrl(Requirement.Item.Name)" target="_blank" rel="noopener" title="Open @Requirement.Item.Name on the wiki">Wiki</a>
+    </div>
+    @if (_open || Requirement.Note is not null || ShowHow)
+    {
+        <div class="item-detail">
+            @if (Requirement.Note is not null) { <p>@Requirement.Note</p> }
+            @if (State.Where is not null && (_open || ShowHow)) { <p class="muted">Where: @State.Where</p> }
+            @if (State.Prerequisite is not null && (_open || ShowHow)) { <p class="muted">Needs: @State.Prerequisite</p> }
+            @if (State.HowToGet is not null && (_open || ShowHow)) { <p class="muted">@State.HowToGet</p> }
+            @if (_open)
+            {
+                @if (Requirement.Item.Desc is not null) { <p class="muted small">@Requirement.Item.Desc</p> }
+            }
+        </div>
+    }
+</li>
+
+@code {
+    [Parameter, EditorRequired] public Requirement Requirement { get; set; } = null!;
+    /// <summary>False when no character is linked, so there's nothing to say about ownership.</summary>
+    [Parameter] public bool Linked { get; set; } = true;
+
+    private bool _open;
+
+    private ItemState State => Requirement.State;
+
+    // Missing items say how to get them without a tap; that's the point of the route.
+    private bool ShowHow => Linked && State.Owned == false && Requirement.Note is null;
+
+    private string StatusClass => State.Owned switch
+    {
+        true => "owned s-owned",
+        null => "s-other",
+        false => Labels.StatusClass(State.RunStatus ?? ""),
+    };
+
+    private string StatusText => !Linked ? State.HowToGet ?? "" : State.Owned switch
+    {
+        true => "Owned",
+        null => "Not tracked by the save, check in game",
+        false when State.RunStatus is { } s => Labels.StatusText(s) + (State.World is null ? "" : $" · {State.World}"),
+        false => "Missing" + (State.World is null ? "" : $" · {State.World}"),
+    };
+}

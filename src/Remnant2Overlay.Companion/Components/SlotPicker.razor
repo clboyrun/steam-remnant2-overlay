@@ -1,0 +1,55 @@
+@* One slot of a build: a labelled list of items, with the picked item's effect text and a wiki link under it.
+   Items the linked character owns are ticked. *@
+
+<div class="slot">
+    <label class="slot-label muted small">@Label</label>
+    <div class="slot-row">
+        <select value="@(Value ?? "")" @onchange="Changed">
+            <option value="">— @(Empty ?? "none") —</option>
+            @foreach (var item in Options)
+            {
+                <option value="@item.Id">@item.Name@Mark(item)</option>
+            }
+        </select>
+        @if (Picked is { } picked)
+        {
+            <a class="wiki" href="@Labels.WikiUrl(picked.Name)" target="_blank" rel="noopener" title="Open @picked.Name on the wiki">Wiki</a>
+        }
+    </div>
+    @if (Picked is { } p && ShowDetail)
+    {
+        <p class="slot-desc muted small">
+            @if (Detail is not null) { <span>@Detail<br /></span> }
+            @p.Desc
+            @if (p.MaxLevelBonus is not null) { <br /><span>Level 10: @p.MaxLevelBonus</span> }
+        </p>
+    }
+</div>
+
+@code {
+    [Parameter, EditorRequired] public string Label { get; set; } = "";
+    [Parameter, EditorRequired] public IEnumerable<PlannerItem> Items { get; set; } = [];
+    [Parameter] public string? Value { get; set; }
+    [Parameter] public EventCallback<string?> ValueChanged { get; set; }
+    [Parameter] public string? Empty { get; set; }
+    /// <summary>Extra line above the description, e.g. a weapon's stats.</summary>
+    [Parameter] public string? Detail { get; set; }
+    [Parameter] public bool ShowDetail { get; set; } = true;
+    [Parameter] public Collection? Character { get; set; }
+    [Parameter] public bool OwnedOnly { get; set; }
+
+    private PlannerItem? Picked => Items.FirstOrDefault(i => i.Id == Value);
+
+    // Keep the picked item listed even when "owned only" would hide it.
+    private IEnumerable<PlannerItem> Options =>
+        Items.Where(i => !OwnedOnly || i.Id == Value || PlannerLink.Owned(Character, i) != false);
+
+    private string Mark(PlannerItem item) => PlannerLink.Owned(Character, item) switch
+    {
+        true => " ✓",
+        _ => "",
+    };
+
+    private Task Changed(ChangeEventArgs e) =>
+        ValueChanged.InvokeAsync(e.Value is string s && s.Length > 0 ? s : null);
+}

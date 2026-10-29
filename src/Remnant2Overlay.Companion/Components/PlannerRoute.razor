@@ -1,0 +1,61 @@
+@* What the linked character still needs for a build, and an order to go get it in. *@
+
+@if (Character is null)
+{
+    <section class="card">
+        <h2>Link a character</h2>
+        <p>Pick a character above to compare this build with: one synced from the overlay on your PC, or one you keep on
+           this device in console mode. You'll get every item still missing and a route to collect them.</p>
+    </section>
+    <h2 class="spaced">Everything this build uses</h2>
+    <ul class="items">
+        @foreach (var r in Requirements) { <RequirementRow Requirement="r" Linked="false" /> }
+    </ul>
+}
+else
+{
+    int tracked = Requirements.Count(r => r.State.Owned is not null);
+    int have = Requirements.Count(r => r.Done);
+    <div class="banner @(have == tracked && Route.All(s => s.Items.All(r => r.Done)) ? "done" : "")">
+        <b>@Character.Label</b> has <b>@have</b> of the @tracked items the save can see@(tracked < Requirements.Count ? $", plus {Requirements.Count - tracked} to check yourself" : "").
+    </div>
+
+    @foreach (var step in Route)
+    {
+        <section class="route-step">
+            <h2 class="spaced">@step.Title</h2>
+            <p class="muted small">@step.Why</p>
+            <ul class="items">
+                @foreach (var r in step.Items) { <RequirementRow Requirement="r" /> }
+            </ul>
+        </section>
+    }
+
+    @if (Requirements.Where(r => r.Done).ToList() is { Count: > 0 } done)
+    {
+        <details>
+            <summary><span class="title">Already have (@done.Count)</span></summary>
+            <ul class="items">
+                @foreach (var r in done) { <RequirementRow Requirement="r" /> }
+            </ul>
+        </details>
+    }
+}
+
+@code {
+    [Parameter, EditorRequired] public Build Build { get; set; } = null!;
+    [Parameter, EditorRequired] public PlannerDatabase Db { get; set; } = null!;
+    [Parameter] public RuntimeCharacter? Character { get; set; }
+
+    private IReadOnlyList<Requirement> Requirements { get; set; } = [];
+    private IReadOnlyList<RouteStep> Route { get; set; } = [];
+
+    protected override void OnParametersSet()
+    {
+        var empty = new ItemState(null, null, null, null, null, null, false);
+        Requirements = BuildPlan.Requirements(Build, Db, item => Character is null
+            ? empty with { HowToGet = item.Where }
+            : PlannerLink.State(Character.Collection, item));
+        Route = Character is null ? [] : BuildPlan.Route(Requirements);
+    }
+}

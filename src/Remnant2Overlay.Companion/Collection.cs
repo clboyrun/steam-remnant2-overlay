@@ -8,9 +8,12 @@ public sealed class Collection(ItemDatabase db, CharacterSnapshot? character, Ru
 {
     private readonly HashSet<string> _owned = character?.Owned.ToHashSet(StringComparer.Ordinal) ?? [];
     private readonly Dictionary<string, ItemInfo> _byId = db.Items.ToDictionary(i => i.Id);
+    // The planner's ids come from another project and sometimes differ in case (Ring_AtaeriiBooster).
+    private readonly Dictionary<string, ItemInfo> _byAsset = db.Items.ToDictionary(i => i.AssetName, StringComparer.OrdinalIgnoreCase);
 
     public ItemDatabase Db => db;
     public ItemInfo? ById(string id) => _byId.GetValueOrDefault(id);
+    public ItemInfo? ByAsset(string assetName) => _byAsset.GetValueOrDefault(assetName);
     public RunSnapshot? Run => run;
 
     public bool OwnedInSave(ItemInfo item) => _owned.Contains(item.AssetName);
