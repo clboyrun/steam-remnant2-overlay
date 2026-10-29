@@ -7,12 +7,15 @@
 
 <header class="bar">
     <h1>Remnant 2 Companion</h1>
-    @if (_mode == OverlayMode && Auth.ClientId is not null)
-    {
-        <button class="primary" disabled="@(Sync.Syncing || _busy)" @onclick="SyncTapped">
-            @(Sync.Syncing ? "Syncing…" : Auth.HasToken ? "Sync" : "Sign in")
-        </button>
-    }
+    <div class="bar-actions">
+        <a class="button" href="https://remnant2.wiki.gg" target="_blank" rel="noopener">Wiki</a>
+        @if (_mode == OverlayMode && Auth.ClientId is not null)
+        {
+            <button class="primary" disabled="@(Sync.Syncing || _busy)" @onclick="SyncTapped">
+                @(Sync.Syncing ? "Syncing…" : Auth.HasToken ? "Sync" : "Sign in")
+            </button>
+        }
+    </div>
 </header>
 
 <main>
