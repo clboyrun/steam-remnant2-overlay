@@ -14,6 +14,8 @@ public enum ItemCategory
     RelicFragment,
     Relic,
     Trait,
+    /// <summary>An archetype, owned once its engram is in the inventory.</summary>
+    Archetype,
 }
 
 public static class ItemCategories
@@ -33,6 +35,7 @@ public static class ItemCategories
         ("RelicFragment_", ItemCategory.RelicFragment),
         ("Relic_Consumable_", ItemCategory.Relic),
         ("Trait_", ItemCategory.Trait),
+        ("Engram_", ItemCategory.Archetype),
     ];
 
     public static ItemCategory? FromAssetName(string assetName)

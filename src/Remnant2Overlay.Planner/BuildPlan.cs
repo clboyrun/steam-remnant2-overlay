@@ -1,7 +1,7 @@
 namespace Remnant2Overlay.Planner;
 
 /// <summary>What the linked character's save says about one item.</summary>
-/// <param name="Owned">Null when the save reader doesn't track this kind of item (archetypes, relic fragments).</param>
+/// <param name="Owned">Null when the save reader doesn't track this kind of item (e.g. legendary relic fragments).</param>
 /// <param name="RunStatus">Status in the run being played: Available, NeedsPrerequisite, MissedThisRun, NotRolled,
 /// WorldNotInRun, or null without run info.</param>
 /// <param name="World">Friendly world name the item drops in, e.g. Losomn or "Any / Ward 13".</param>
@@ -88,7 +88,7 @@ public static class BuildPlan
                 any ? "Not tied to one world." : $"{world.Count()} build item{(world.Count() == 1 ? "" : "s")} drop there. Reroll until the zones listed roll.",
                 world);
         }
-        Step("Check these yourself", "The save reader doesn't track archetypes or relic fragments; tick them off in game.", missing.Where(r => r.State.Owned is null));
+        Step("Check these yourself", "The save doesn't show these (e.g. legendary fragments); check them in game.", missing.Where(r => r.State.Owned is null));
 
         var upgrades = requirements.Where(r => r.Upgrade is not null).Select(r => r with { Note = r.Upgrade }).ToList();
         if (upgrades.Count > 0) steps.Add(new RouteStep("Upgrade weapons", "Once you have them.", upgrades));

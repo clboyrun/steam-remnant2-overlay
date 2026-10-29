@@ -2224,6 +2224,482 @@
   "ProfileId": "/Game/World_DLC3/Items/Archetypes/Warden/Armor/Armor_Legs_Warden.Armor_Legs_Warden_C"
  },
  {
+  "Id": "Engram_Alchemist",
+  "Type": "engram",
+  "World": "World_Base",
+  "DropType": "Event",
+  "DropReference": "Quest_Injectable_FaeCity_BoneHarvesterLair",
+  "Note": "Approach every sewer drain on the edge of the Dran overland areas until you get grabbed by a Manticora. Once you load into the new area, defeat the Manticora that drops the Mysterious Stone",
+  "Material": "Item_HiddenContainer_Material_Engram_Alchemist",
+  "ProfileId": "/Game/World_Base/Items/Archetypes/Alchemist/Engram_Alchemist.Engram_Alchemist_C"
+ },
+ {
+  "Id": "Engram_Archon",
+  "Type": "engram",
+  "World": "World_Base",
+  "DropType": "Location",
+  "DropReference": "The Labyrinth",
+  "Note": "Equip: Fortune Hunter skill of the Explorer, Wormhole skill of the Invader, Realmwalker armor set, Void Heart relic, Ford's Scattergun, Cube Gun, Labyrinth Staff, Leto's Amulet, Amber Moonstone, Black Cat Band, Anastasija's Inspiration, Zania's Malice. In the Labyrinth, head to the cycling portal. Wait until you see the scene in which you will drop into nothingness, and after two seconds enter. A bridge will appear, granting you safe passage. Move to the back of the area, you will have to fight some enemies, and turn right to find the Corrupted door. Open it using the biome portal key. Go through the gate, you'll be at \"The Backrooms\". Explore the backrooms until you find the Strange Box. The Fortune Hunter skill of the Explorer can help find it before the timer expires",
+  "Prerequisite": "Engram_Explorer, Engram_Invader, Armor_Body_Explorer, Armor_Gloves_Explorer, Armor_Head_Explorer, Armor_Legs_Explorer, Relic_Consumable_VoidHeart, Weapon_Shotgun, Weapon_CubeGun, Weapon_LabyrinthStaff, Amulet_LetosAmulet, Ring_AmberMoonstone, Ring_BlackCatBand, Ring_AnastasijasInspiration, Ring_ZaniasMalice",
+  "Material": "Item_HiddenContainer_Material_Engram_Archon",
+  "ProfileId": "/Game/World_Base/Items/Archetypes/Archon/Engram_Archon.Engram_Archon_C"
+ },
+ {
+  "Id": "Engram_Challenger",
+  "Type": "engram",
+  "World": "World_Base",
+  "DropType": "Vendor",
+  "DropReference": "Reggie",
+  "Note": "Buy the Old Metal Tool from Reggie at Ward 13",
+  "Material": "Item_HiddenContainer_Material_Engram_Challenger",
+  "ProfileId": "/Game/World_Base/Items/Archetypes/Challenger/Engram_Challenger.Engram_Challenger_C"
+ },
+ {
+  "Id": "Engram_Engineer",
+  "Type": "engram",
+  "World": "World_Base",
+  "DropType": "Event",
+  "DropReference": "Quest_Injectable_OverworldFog",
+  "Note": "Alien Device found just out of bounds in the overland area on N'Erud in poisoned fog. The Explorer Archetype skill \"Fortune Hunter\" can help find the item",
+  "Material": "Item_HiddenContainer_Material_Engram_Engineer",
+  "ProfileId": "/Game/World_Base/Items/Archetypes/Engineer/Engram_Engineer.Engram_Engineer_C"
+ },
+ {
+  "Id": "Engram_Explorer",
+  "Type": "engram",
+  "World": "World_Base",
+  "DropType": "Event",
+  "DropReference": "Quest_RootEarth_TowerBoss",
+  "Note": "Broken Compass drops as a final campaign boss reward",
+  "Material": "Item_HiddenContainer_Material_Engram_Explorer",
+  "ProfileId": "/Game/World_Base/Items/Archetypes/Explorer/Engram_Explorer.Engram_Explorer_C"
+ },
+ {
+  "Id": "Engram_Gunslinger",
+  "Type": "engram",
+  "World": "World_Base",
+  "DropType": "Vendor",
+  "DropReference": "Mudtooth",
+  "Note": "Buy Worn Cylinder from Mudtooth at Ward 13 after exhausting his stories after getting to Root Earth in campaign mode",
+  "Material": "Item_HiddenContainer_Material_Engram_Gunslinger",
+  "ProfileId": "/Game/World_Base/Items/Archetypes/Gunslinger/Engram_Gunslinger.Engram_Gunslinger_C"
+ },
+ {
+  "Id": "Engram_Handler",
+  "Type": "engram",
+  "World": "World_Base",
+  "DropType": "Vendor",
+  "DropReference": "Mudtooth",
+  "Note": "Buy Old Whistle from Mudtooth at Ward 13",
+  "Material": "Item_HiddenContainer_Material_Engram_Handler",
+  "ProfileId": "/Game/World_Base/Items/Archetypes/Handler/Engram_Handler.Engram_Handler_C"
+ },
+ {
+  "Id": "Engram_Hunter",
+  "Type": "engram",
+  "World": "World_Base",
+  "DropType": "Vendor",
+  "DropReference": "Brabus",
+  "Note": "Buy Rusty Medal from Brabus at Ward 13",
+  "Material": "Item_HiddenContainer_Material_Engram_Hunter",
+  "ProfileId": "/Game/World_Base/Items/Archetypes/Hunter/Engram_Hunter.Engram_Hunter_C"
+ },
+ {
+  "Id": "Engram_Invader",
+  "Type": "engram",
+  "World": "World_Base",
+  "DropType": "Event",
+  "DropReference": "Quest_RootEarth_Zone2",
+  "Note": "Found in the Corrupted Harbor location on Root Earth. Use the Dreamcatcher melee weapon on the glowing blue fixture in the area, where you found Escalation Protocol. It is just off the main path from the boiler room arena between the first and the second checkpoint. Use the \"Walker's Dream\" item that will drop and defeat the Bane aberration that drops Wooden Shiv",
+  "Prerequisite": "Weapon_Dreamcatcher",
+  "Material": "Item_HiddenContainer_Material_Engram_Invader",
+  "ProfileId": "/Game/World_Base/Items/Archetypes/Invader/Engram_Invader.Engram_Invader_C"
+ },
+ {
+  "Id": "Engram_Invoker",
+  "Type": "engram",
+  "World": "World_DLC2",
+  "DropType": "Location",
+  "DropReference": "Ancient Canopy",
+  "Note": "Old Flute is found in the Ancient Canopy area on Yaesha. Once you reach the Abandoned Citadel world stone and lower the round fixture by flipping a lever nearby, get back on the fixture and go to the very bottom of it, you will have to take three ladders before you reach the bottom. There will be an entrance and a short trapped path, with a sand room with more traps at the end. You need to get there after having spoken to Lydusa and received her curse. In the sand room there will be two sand hills close to each other. You need to maneuver yourself between them so that you do not get killed by the traps. Then you need to stand in place for about 5 minutes gradually sinking into the sand. In the end you will fall through into the room below and get the Old Flute.",
+  "Material": "Item_HiddenContainer_Material_Engram_Invoker",
+  "ProfileId": "/Game/World_DLC2/Items/Archetypes/Invoker/Engram/Engram_Invoker.Engram_Invoker_C"
+ },
+ {
+  "Id": "Engram_Medic",
+  "Type": "engram",
+  "World": "World_Base",
+  "DropType": "Vendor",
+  "DropReference": "Norah",
+  "Note": "Buy Medic Pin from Norah at Ward 13",
+  "Material": "Item_HiddenContainer_Material_Engram_Medic",
+  "ProfileId": "/Game/World_Base/Items/Archetypes/Medic/Engram_Medic.Engram_Medic_C"
+ },
+ {
+  "Id": "Engram_Ritualist",
+  "Type": "engram",
+  "World": "World_DLC1",
+  "DropType": "Location",
+  "DropReference": "Forlorn Coast",
+  "Note": "Found in the Forlorn Coast location on Losomn, from the first checkpoint after the Drowned Wen world stone (the checkpoint is near the iron door that, when unlocked, leads back to the start of Forlorn Coast) follow the boats until you see a breach in the wall, follow a short path inside and see a witch performing a ritual on a pig. The Ragged Poppet will be near the witch",
+  "Material": "Item_HiddenContainer_Material_Engram_Ritualist",
+  "ProfileId": "/Game/World_DLC1/Items/Archetypes/Ritualist/Engram/Engram_Ritualist.Engram_Ritualist_C"
+ },
+ {
+  "Id": "Engram_Summoner",
+  "Type": "engram",
+  "World": "World_Base",
+  "DropType": "Vendor",
+  "DropReference": "Blood Moon Altar",
+  "Note": "Buy Faded Grimoire from Blood Moon Altar in an overworld location on Yaesha",
+  "Material": "Item_HiddenContainer_Material_Engram_Summoner",
+  "ProfileId": "/Game/World_Base/Items/Archetypes/Summoner/Engram_Summoner.Engram_Summoner_C"
+ },
+ {
+  "Id": "Engram_Warden",
+  "Type": "engram",
+  "World": "World_DLC3",
+  "DropType": "Location",
+  "DropReference": "Withered Necropolis",
+  "Note": "Weathered Mechanism is found in the Withered Necropolis area on N'Erud. Take the closest glider from the Waylaid Conservatory world stone, glide all the way down the canyon until you hit the first wind plume, turn right and hit the next wind plume just around the corner, and then the next one in the same direction. The small platform (with a sort of short broken bridge sticking out of it) will be immediately next to that last plume. Land on it, go under the arch and to the left over the bridge. Weathered Mechanism is in a room just after the bridge",
+  "Material": "Item_HiddenContainer_Material_Engram_Warden",
+  "ProfileId": "/Game/World_DLC3/Items/Archetypes/Warden/Engram_Warden.Engram_Warden_C"
+ },
+ {
+  "Id": "RelicFragment_AmmoReserves",
+  "Type": "fragment",
+  "World": "World_Base",
+  "Note": "Random drop",
+  "ProfileId": "/Game/World_Base/Items/Gems/Ranged/Discipline/RelicFragment_AmmoReserves.RelicFragment_AmmoReserves_C"
+ },
+ {
+  "Id": "RelicFragment_ArmorEffectiveness",
+  "Name": "Armor Bonus",
+  "Type": "fragment",
+  "World": "World_Base",
+  "Note": "Random drop",
+  "ProfileId": "/Game/World_Base/Items/Gems/Ranged/Intellect/RelicFragment_ArmorEffectiveness.RelicFragment_ArmorEffectiveness_C"
+ },
+ {
+  "Id": "RelicFragment_ArmorFlat",
+  "Name": "Base Armor",
+  "Type": "fragment",
+  "World": "World_Base",
+  "Note": "Random drop",
+  "ProfileId": "/Game/World_Base/Items/Gems/_Core/Shared/RelicFragment_ArmorFlat.RelicFragment_ArmorFlat_C"
+ },
+ {
+  "Id": "RelicFragment_CastSpeed",
+  "Type": "fragment",
+  "World": "World_Base",
+  "Note": "Random drop",
+  "ProfileId": "/Game/World_Base/Items/Gems/Ranged/Discipline/RelicFragment_CastSpeed.RelicFragment_CastSpeed_C"
+ },
+ {
+  "Id": "RelicFragment_ConsumableDuration",
+  "Type": "fragment",
+  "World": "World_Base",
+  "Note": "Random drop",
+  "ProfileId": "/Game/World_Base/Items/Gems/Ranged/Discipline/RelicFragment_ConsumableDuration.RelicFragment_ConsumableDuration_C"
+ },
+ {
+  "Id": "RelicFragment_ConsumableSpeed",
+  "Name": "Use Speed",
+  "Type": "fragment",
+  "World": "World_Base",
+  "Note": "Random drop",
+  "ProfileId": "/Game/World_Base/Items/Gems/Ranged/Discipline/RelicFragment_ConsumableSpeed.RelicFragment_ConsumableSpeed_C"
+ },
+ {
+  "Id": "RelicFragment_CriticalDamage",
+  "Type": "fragment",
+  "World": "World_Base",
+  "Note": "Random drop",
+  "ProfileId": "/Game/World_Base/Items/Gems/_Core/Shared/RelicFragment_CriticalDamage.RelicFragment_CriticalDamage_C"
+ },
+ {
+  "Id": "RelicFragment_DamageReduction",
+  "Type": "fragment",
+  "World": "World_Base",
+  "Note": "Random drop",
+  "ProfileId": "/Game/World_Base/Items/Gems/Ranged/Intellect/RelicFragment_DamageReduction.RelicFragment_DamageReduction_C"
+ },
+ {
+  "Id": "RelicFragment_EvadeDistance",
+  "Type": "fragment",
+  "World": "World_Base",
+  "Note": "Random drop",
+  "ProfileId": "/Game/World_Base/Items/Gems/_Core/Shared/RelicFragment_EvadeDistance.RelicFragment_EvadeDistance_C"
+ },
+ {
+  "Id": "RelicFragment_EvadeSpeed",
+  "Type": "fragment",
+  "World": "World_Base",
+  "Note": "Random drop",
+  "ProfileId": "/Game/World_Base/Items/Gems/_Core/Shared/RelicFragment_EvadeSpeed.RelicFragment_EvadeSpeed_C"
+ },
+ {
+  "Id": "RelicFragment_ExplosiveDamage",
+  "Type": "fragment",
+  "World": "World_Base",
+  "Note": "Random drop",
+  "ProfileId": "/Game/World_Base/Items/Gems/_Core/Shared/RelicFragment_ExplosiveDamage.RelicFragment_ExplosiveDamage_C"
+ },
+ {
+  "Id": "RelicFragment_GreyHealthRate",
+  "Name": "Grey Health Conversion",
+  "Type": "fragment",
+  "World": "World_Base",
+  "Note": "Random drop",
+  "ProfileId": "/Game/World_Base/Items/Gems/Ranged/Intellect/RelicFragment_GreyHealthRate.RelicFragment_GreyHealthRate_C"
+ },
+ {
+  "Id": "RelicFragment_HealingEffectiveness",
+  "Type": "fragment",
+  "World": "World_Base",
+  "Note": "Random drop",
+  "ProfileId": "/Game/World_Base/Items/Gems/Ranged/Intellect/RelicFragment_HealingEffectiveness.RelicFragment_HealingEffectiveness_C"
+ },
+ {
+  "Id": "RelicFragment_Health",
+  "Name": "Health Bonus",
+  "Type": "fragment",
+  "World": "World_Base",
+  "Note": "Random drop",
+  "ProfileId": "/Game/World_Base/Items/Gems/Ranged/Intellect/RelicFragment_Health.RelicFragment_Health_C"
+ },
+ {
+  "Id": "RelicFragment_HealthFlat",
+  "Name": "Base Health",
+  "Type": "fragment",
+  "World": "World_Base",
+  "Note": "Random drop",
+  "ProfileId": "/Game/World_Base/Items/Gems/_Core/Shared/RelicFragment_HealthFlat.RelicFragment_HealthFlat_C"
+ },
+ {
+  "Id": "RelicFragment_HealthRegen",
+  "Name": "Health Regeneration",
+  "Type": "fragment",
+  "World": "World_Base",
+  "Note": "Random drop",
+  "ProfileId": "/Game/World_Base/Items/Gems/_Core/Shared/RelicFragment_HealthRegen.RelicFragment_HealthRegen_C"
+ },
+ {
+  "Id": "RelicFragment_HeatGenReduction",
+  "Name": "Heat Generation",
+  "Type": "fragment",
+  "World": "World_Base",
+  "Note": "Random drop",
+  "ProfileId": "/Game/World_Base/Items/Gems/_Core/Shared/RelicFragment_HeatGenReduction.RelicFragment_HeatGenReduction_C"
+ },
+ {
+  "Id": "RelicFragment_IdealRange",
+  "Name": "Weapon Ideal Range",
+  "Type": "fragment",
+  "World": "World_Base",
+  "Note": "Random drop",
+  "ProfileId": "/Game/World_Base/Items/Gems/_Core/Shared/RelicFragment_IdealRange.RelicFragment_IdealRange_C"
+ },
+ {
+  "Id": "RelicFragment_MeleeAttackSpeed",
+  "Name": "Melee Speed",
+  "Type": "fragment",
+  "World": "World_Base",
+  "Note": "Random drop",
+  "ProfileId": "/Game/World_Base/Items/Gems/Melee/Power/RelicFragment_MeleeAttackSpeed.RelicFragment_MeleeAttackSpeed_C"
+ },
+ {
+  "Id": "RelicFragment_MeleeCritChance",
+  "Name": "Melee Critical Chance",
+  "Type": "fragment",
+  "World": "World_Base",
+  "Note": "Random drop",
+  "ProfileId": "/Game/World_Base/Items/Gems/Melee/Power/CritChance/RelicFragment_MeleeCritChance.RelicFragment_MeleeCritChance_C"
+ },
+ {
+  "Id": "RelicFragment_MeleeDamage",
+  "Type": "fragment",
+  "World": "World_Base",
+  "Note": "Random drop",
+  "ProfileId": "/Game/World_Base/Items/Gems/Melee/Power/RelicFragment_MeleeDamage.RelicFragment_MeleeDamage_C"
+ },
+ {
+  "Id": "RelicFragment_ModCritChance",
+  "Name": "Mod Critical Chance",
+  "Type": "fragment",
+  "World": "World_Base",
+  "Note": "Random drop",
+  "ProfileId": "/Game/World_Base/Items/Gems/_Core/Shared/RelicFragment_ModCritChance.RelicFragment_ModCritChance_C"
+ },
+ {
+  "Id": "RelicFragment_ModDamage",
+  "Type": "fragment",
+  "World": "World_Base",
+  "Note": "Random drop",
+  "ProfileId": "/Game/World_Base/Items/Gems/Ranged/Power/RelicFragment_ModDamage.RelicFragment_ModDamage_C"
+ },
+ {
+  "Id": "RelicFragment_ModDuration",
+  "Type": "fragment",
+  "World": "World_Base",
+  "Note": "Random drop",
+  "ProfileId": "/Game/World_Base/Items/Gems/Ranged/Intellect/RelicFragment_ModDuration.RelicFragment_ModDuration_C"
+ },
+ {
+  "Id": "RelicFragment_ModGeneration",
+  "Type": "fragment",
+  "World": "World_Base",
+  "Note": "Random drop",
+  "ProfileId": "/Game/World_Base/Items/Gems/_Core/Shared/RelicFragment_ModGeneration.RelicFragment_ModGeneration_C"
+ },
+ {
+  "Id": "RelicFragment_MovementSpeed",
+  "Type": "fragment",
+  "World": "World_Base",
+  "Note": "Random drop",
+  "ProfileId": "/Game/World_Base/Items/Gems/_Core/Shared/RelicFragment_MovementSpeed.RelicFragment_MovementSpeed_C"
+ },
+ {
+  "Id": "RelicFragment_ProjectileSpeed",
+  "Type": "fragment",
+  "World": "World_Base",
+  "Note": "Random drop",
+  "ProfileId": "/Game/World_Base/Items/Gems/_Core/Shared/RelicFragment_ProjectileSpeed.RelicFragment_ProjectileSpeed_C"
+ },
+ {
+  "Id": "RelicFragment_RangedChargeSpeed",
+  "Name": "Firearm Charge Time",
+  "Type": "fragment",
+  "World": "World_Base",
+  "Note": "Random drop",
+  "ProfileId": "/Game/World_Base/Items/Gems/_Core/Shared/RelicFragment_RangedChargeSpeed.RelicFragment_RangedChargeSpeed_C"
+ },
+ {
+  "Id": "RelicFragment_RangedCritChance",
+  "Name": "Ranged Critical Chance",
+  "Type": "fragment",
+  "World": "World_Base",
+  "Note": "Random drop",
+  "ProfileId": "/Game/World_Base/Items/Gems/Ranged/Power/CritChance/RelicFragment_RangedCritChance.RelicFragment_RangedCritChance_C"
+ },
+ {
+  "Id": "RelicFragment_RangedDamage",
+  "Type": "fragment",
+  "World": "World_Base",
+  "Note": "Random drop",
+  "ProfileId": "/Game/World_Base/Items/Gems/Ranged/Power/RelicFragment_RangedDamage.RelicFragment_RangedDamage_C"
+ },
+ {
+  "Id": "RelicFragment_RangedFireRate",
+  "Type": "fragment",
+  "World": "World_Base",
+  "Note": "Random drop",
+  "ProfileId": "/Game/World_Base/Items/Gems/Ranged/Power/RelicFragment_RangedFireRate.RelicFragment_RangedFireRate_C"
+ },
+ {
+  "Id": "RelicFragment_ReloadSpeed",
+  "Type": "fragment",
+  "World": "World_Base",
+  "Note": "Random drop",
+  "ProfileId": "/Game/World_Base/Items/Gems/_Core/Shared/RelicFragment_ReloadSpeed.RelicFragment_ReloadSpeed_C"
+ },
+ {
+  "Id": "RelicFragment_ReviveSpeed",
+  "Type": "fragment",
+  "World": "World_Base",
+  "Note": "Random drop",
+  "ProfileId": "/Game/World_Base/Items/Gems/Ranged/Intellect/RelicFragment_ReviveSpeed.RelicFragment_ReviveSpeed_C"
+ },
+ {
+  "Id": "RelicFragment_ShieldDuration",
+  "Type": "fragment",
+  "World": "World_Base",
+  "Note": "Random drop",
+  "ProfileId": "/Game/World_Base/Items/Gems/_Core/Shared/RelicFragment_ShieldDuration.RelicFragment_ShieldDuration_C"
+ },
+ {
+  "Id": "RelicFragment_ShieldEffectiveness",
+  "Name": "Shield Amount",
+  "Type": "fragment",
+  "World": "World_Base",
+  "Note": "Random drop",
+  "ProfileId": "/Game/World_Base/Items/Gems/Ranged/Intellect/RelicFragment_ShieldEffectiveness.RelicFragment_ShieldEffectiveness_C"
+ },
+ {
+  "Id": "RelicFragment_SkillCooldown",
+  "Type": "fragment",
+  "World": "World_Base",
+  "Note": "Random drop",
+  "ProfileId": "/Game/World_Base/Items/Gems/Ranged/Intellect/RelicFragment_SkillCooldown.RelicFragment_SkillCooldown_C"
+ },
+ {
+  "Id": "RelicFragment_SkillCritChance",
+  "Name": "Skill Critical Chance",
+  "Type": "fragment",
+  "World": "World_Base",
+  "Note": "Random drop",
+  "ProfileId": "/Game/World_Base/Items/Gems/_Core/Shared/RelicFragment_SkillCritChance.RelicFragment_SkillCritChance_C"
+ },
+ {
+  "Id": "RelicFragment_SkillDamage",
+  "Type": "fragment",
+  "World": "World_Base",
+  "Note": "Random drop",
+  "ProfileId": "/Game/World_Base/Items/Gems/Ranged/Power/RelicFragment_SkillDamage.RelicFragment_SkillDamage_C"
+ },
+ {
+  "Id": "RelicFragment_SkillDuration",
+  "Type": "fragment",
+  "World": "World_Base",
+  "Note": "Random drop",
+  "ProfileId": "/Game/World_Base/Items/Gems/Ranged/Intellect/RelicFragment_SkillDuration.RelicFragment_SkillDuration_C"
+ },
+ {
+  "Id": "RelicFragment_Stamina",
+  "Name": "Stamina Bonus",
+  "Type": "fragment",
+  "World": "World_Base",
+  "Note": "Random drop",
+  "ProfileId": "/Game/World_Base/Items/Gems/Ranged/Intellect/RelicFragment_Stamina.RelicFragment_Stamina_C"
+ },
+ {
+  "Id": "RelicFragment_StaminaFlat",
+  "Name": "Base Stamina",
+  "Type": "fragment",
+  "World": "World_Base",
+  "Note": "Random drop",
+  "ProfileId": "/Game/World_Base/Items/Gems/_Core/Shared/RelicFragment_StaminaFlat.RelicFragment_StaminaFlat_C"
+ },
+ {
+  "Id": "RelicFragment_StatusDamage",
+  "Type": "fragment",
+  "World": "World_Base",
+  "Note": "Random drop",
+  "ProfileId": "/Game/World_Base/Items/Gems/_Core/Shared/RelicFragment_StatusDamage.RelicFragment_StatusDamage_C"
+ },
+ {
+  "Id": "RelicFragment_WeakspotDamage",
+  "Type": "fragment",
+  "World": "World_Base",
+  "Note": "Random drop",
+  "ProfileId": "/Game/World_Base/Items/Gems/_Core/Shared/RelicFragment_WeakspotDamage.RelicFragment_WeakspotDamage_C"
+ },
+ {
+  "Id": "RelicFragment_WeaponSpread",
+  "Type": "fragment",
+  "World": "World_Base",
+  "Note": "Random drop",
+  "ProfileId": "/Game/World_Base/Items/Gems/Ranged/Discipline/RelicFragment_WeaponSpread.RelicFragment_WeaponSpread_C"
+ },
+ {
+  "Id": "RelicFragment_WeaponSwapSpeed",
+  "Name": "Firearm Swap Speed",
+  "Type": "fragment",
+  "World": "World_Base",
+  "Note": "Random drop",
+  "ProfileId": "/Game/World_Base/Items/Gems/Ranged/Discipline/RelicFragment_WeaponSwapSpeed.RelicFragment_WeaponSwapSpeed_C"
+ },
+ {
   "Id": "Mod_AbrasiveRounds",
   "Type": "mod",
   "World": "World_DLC2",

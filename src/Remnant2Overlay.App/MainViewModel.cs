@@ -86,6 +86,8 @@ public sealed class MainViewModel : INotifyPropertyChanged
         new("Mutators", [ItemCategory.Mutator]),
         new("Relics", [ItemCategory.Relic]),
         new("Traits", [ItemCategory.Trait]),
+        new("Fragments", [ItemCategory.RelicFragment]),
+        new("Archetypes", [ItemCategory.Archetype]),
     ];
 
     public IReadOnlyList<WorldFilter> Worlds { get; } =

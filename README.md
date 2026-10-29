@@ -1,7 +1,7 @@
 # Remnant 2 Overlay
 
 A Windows companion window for Remnant 2 (Steam) that reads your save, shows which weapons, armor,
-mutators, rings, amulets, relics and traits you own or are missing, and later suggests run paths for the missing ones.
+mutators, rings, amulets, relics, relic fragments, traits and archetypes you own or are missing, and later suggests run paths for the missing ones.
 
 Steam's own overlay can't host third-party content, so this is a borderless, always-on-top window.
 Run the game in **borderless windowed** mode so the overlay can sit on top of it.
@@ -136,8 +136,8 @@ Switching back to **PC with overlay** keeps the console characters; the two mode
   ones (after a kill, while bleeding…) start switched off and can be ticked on.
 - **What I need**: link the build to a synced PC character or a console character to list what's missing, grouped
   into a route: grab what the current run has, unlock what it gates, buy in Ward 13, then one adventure per world
-  with the most build items first. Archetypes and relic fragments aren't in the save reader, so they're listed to
-  check by hand.
+  with the most build items first. Archetypes (their engrams) and relic fragments are read from the save like other
+  items; the few things it can't see, such as legendary fragments, are listed to check by hand.
 
 Builds are kept in that browser. Item stats come from the [Remnant 2 Toolkit](https://github.com/joshpayette/remnant2-toolkit)
 (see THIRD_PARTY_NOTICES.md); to refresh them, clone it and run `python tools/build_planner_data.py path/to/remnant2-toolkit`.

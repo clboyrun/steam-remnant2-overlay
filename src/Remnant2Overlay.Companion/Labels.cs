@@ -20,6 +20,9 @@ public static class Labels
         new("Amulets", [ItemCategory.Amulet]),
         new("Mutators", [ItemCategory.Mutator]),
         new("Relics", [ItemCategory.Relic]),
+        new("Fragments", [ItemCategory.RelicFragment]),
+        new("Archetypes", [ItemCategory.Archetype]),
+        new("Traits", [ItemCategory.Trait]),
     ];
 
     public static readonly WorldFilter[] Worlds =
@@ -51,6 +54,7 @@ public static class Labels
         ItemCategory.Mutator => "Mutator",
         ItemCategory.RelicFragment => "Relic fragment",
         ItemCategory.Relic => "Relic",
+        ItemCategory.Archetype => "Archetype",
         _ => "Other",
     };
 

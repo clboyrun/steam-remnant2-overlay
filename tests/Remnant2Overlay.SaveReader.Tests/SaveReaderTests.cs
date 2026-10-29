@@ -55,6 +55,20 @@ public class SaveReaderTests
     }
 
     [Fact]
+    public void Read_FindsArchetypesAndRelicFragments()
+    {
+        byte[] data = Character(
+            "/Game/World_Base/Items/Archetypes/Hunter/Engram_Hunter.Engram_Hunter_C",
+            "/Game/World_Base/Items/Archetypes/Hunter/Archetype_Hunter.Archetype_Hunter_C",
+            "/Game/World_Base/Items/Gems/Ranged/Power/RelicFragment_RangedDamage.RelicFragment_RangedDamage_C");
+
+        var items = Assert.Single(ProfileReader.Read(data)).Items;
+
+        Assert.Equal(["Engram_Hunter", "RelicFragment_RangedDamage"], items.Select(i => i.AssetName));
+        Assert.Equal([ItemCategory.Archetype, ItemCategory.RelicFragment], items.Select(i => i.Category));
+    }
+
+    [Fact]
     public void Read_RealProfile_WhenAvailable()
     {
         // Set REMNANT2_PROFILE to a copy of a real profile.sav to run this against real data.
@@ -65,6 +79,8 @@ public class SaveReaderTests
 
         Assert.NotEmpty(characters);
         Assert.All(characters, c => Assert.Contains(c.Items, i => i.Category == ItemCategory.Weapon));
+        Assert.Contains(characters[0].Items, i => i.Category == ItemCategory.Archetype);
+        Assert.Contains(characters[0].Items, i => i.Category == ItemCategory.RelicFragment);
     }
 
     private static byte[] Character(params string[] itemPaths) =>
@@ -119,10 +135,12 @@ public class ItemDatabaseTests
         var db = ItemDatabase.LoadEmbedded();
 
         Assert.True(db.Items.Count > 600);
-        foreach (var category in Enum.GetValues<ItemCategory>().Except([ItemCategory.RelicFragment]))
+        foreach (var category in Enum.GetValues<ItemCategory>())
             Assert.Contains(db.Items, i => i.Category == category);
         Assert.Equal("Akari War Band", db.Find("Ring_AkariWarBand")?.DisplayName);
         Assert.Equal("Bruiser Bodyplate", db.Find("Armor_Body_Challenger")?.DisplayName);
+        Assert.Equal("Hunter", db.Find("Engram_Hunter")?.DisplayName);
+        Assert.Equal("Ranged Damage", db.Find("RelicFragment_RangedDamage")?.DisplayName);
     }
 
     [Fact]
