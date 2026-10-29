@@ -208,3 +208,9 @@ patch), the app falls back to the simple inventory reader above and shows owned/
 
 The item list also comes from [lib.remnant2.analyzer](https://github.com/AndrewSav/lib.remnant2.analyzer) (MIT, see
 `THIRD_PARTY_NOTICES.md`); rebuild it with `python tools/build_item_db.py path/to/db.json`.
+
+## License
+
+GNU General Public License v3.0 (see `LICENSE`). The build planner's item stats come from the GPL-3.0
+[Remnant 2 Toolkit](https://github.com/joshpayette/remnant2-toolkit), so the project is licensed to match. Bundled and
+referenced third-party code and data keep their own licenses, listed in `THIRD_PARTY_NOTICES.md`.
